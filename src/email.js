@@ -5,6 +5,19 @@ const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
+// Initialize EmailJS with public key at module load
+let initialized = false;
+export function initEmailJS() {
+  if (initialized || !PUBLIC_KEY) return;
+  try {
+    emailjs.init({ publicKey: PUBLIC_KEY });
+    initialized = true;
+    console.log('EmailJS initialized successfully');
+  } catch (err) {
+    console.error('EmailJS init failed:', err);
+  }
+}
+
 function getCompInfo(i) {
   const t = Object.keys(i.statuses).length;
   const d = Object.values(i.statuses).filter(v => v != null).length;
@@ -61,8 +74,12 @@ export function buildEmailBody(insp) {
 
 export async function sendEmail(toEmail, insp) {
   if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
-    return { ok: false, msg: 'EmailJS not configured. Add credentials to .env.local' };
+    console.error('EmailJS config missing:', { SERVICE_ID: !!SERVICE_ID, TEMPLATE_ID: !!TEMPLATE_ID, PUBLIC_KEY: !!PUBLIC_KEY });
+    return { ok: false, msg: 'EmailJS not configured. Check environment variables.' };
   }
+
+  // Ensure initialized
+  initEmailJS();
 
   const addr = insp.propertyAddress || 'Property';
   const body = buildEmailBody(insp);
@@ -75,7 +92,7 @@ export async function sendEmail(toEmail, insp) {
       from_name: 'First Coast Property Care',
       property_address: addr,
       inspection_date: insp.date,
-    }, PUBLIC_KEY);
+    });
 
     if (result.status === 200) return { ok: true, msg: 'Email sent successfully!' };
     return { ok: false, msg: 'Send failed. Try again.' };

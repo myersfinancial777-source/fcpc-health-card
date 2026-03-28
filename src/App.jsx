@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { NAVY, TEAL, TEAL_LIGHT, TEAL_MED, DARK_GRAY, MED_GRAY, LIGHT_GRAY, BORDER_GRAY, STATUS_OPTIONS, SECTIONS, PLAN_TIERS, OVERALL_RATINGS } from './constants.js';
 import { loadInspections, saveInspection, deleteInspection as dbDelete } from './supabase.js';
-import { sendEmail } from './email.js';
+import { sendEmail, initEmailJS } from './email.js';
 import { compressImage, genId, todayStr, getCompInfo, getCounts, getTotalPhotos } from './utils.js';
 import logoUrl from '/logo.png?url';
 
@@ -146,7 +146,7 @@ export default function App() {
   const [showEmail, setShowEmail] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { loadInspections().then(d => { setInspections(d); setLoaded(true); }); }, []);
+  useEffect(() => { loadInspections().then(d => { setInspections(d); setLoaded(true); }); initEmailJS(); }, []);
 
   const cur = inspections.find(i => i.id === currentId) || null;
 
