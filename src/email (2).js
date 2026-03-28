@@ -10,6 +10,11 @@ let initialized = false;
 export function initEmailJS() {
   if (initialized || !PUBLIC_KEY) return;
   try {
+    // Debug: show the key being used (first 6 and last 4 chars only for security)
+    const keyPreview = PUBLIC_KEY.length > 10 
+      ? PUBLIC_KEY.slice(0, 6) + '...' + PUBLIC_KEY.slice(-4) 
+      : '(too short!)';
+    console.log('EmailJS init with key:', keyPreview, 'length:', PUBLIC_KEY.length);
     emailjs.init({ publicKey: PUBLIC_KEY });
     initialized = true;
     console.log('EmailJS initialized successfully');
