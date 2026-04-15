@@ -15,10 +15,10 @@ export const STATUS_OPTIONS = [
 ];
 
 export const SECTIONS = [
-  { title: 'HVAC System', icon: '❄️', items: ['Thermostat operation & settings', 'Air filter condition / replacement', 'AC drain line — flush & inspect', 'Supply & return vents — airflow', 'Condensate pan & line', 'Unusual noises or odors'] },
+  { title: 'HVAC System', icon: '❄️', items: ['Thermostat operation & settings', 'Air filter condition / replacement', 'AC drain line — flush & inspect', 'Supply & return vents — airflow', 'Unusual noises or odors'] },
   { title: 'Plumbing', icon: '🔧', items: ['Faucets — drips, pressure, hot/cold', 'Toilets — flush, fill, base seal', 'Under-sink inspection (leaks, corrosion)', 'Water heater — temp, visible leaks', 'Garbage disposal operation', 'Hose bibs & exterior spigots'] },
   { title: 'Electrical & Safety', icon: '⚡', items: ['Outlets & switches — function test', 'GFCI outlets — test & reset', 'Light fixtures & bulbs', 'Smoke / CO detectors — test & battery', 'Breaker panel — visual inspection'] },
-  { title: 'Interior Condition', icon: '🏠', items: ['Doors & locks — alignment, operation', 'Windows — seals, locks, screens', 'Walls & ceilings — stains, cracks', 'Flooring — damage, loose tiles, hazards', 'Appliances — operation check', 'Cabinets & drawers — hardware'] },
+  { title: 'Interior Condition', icon: '🏠', items: ['Doors & locks — alignment, operation', 'Windows — seals, locks, screens', 'Walls & ceilings — stains, cracks', 'Flooring — damage, loose tiles, hazards', 'Furniture condition check', 'Appliances — operation check', 'Dishwasher filter check & cleaning', 'Cabinets & drawers — hardware'] },
   { title: 'Exterior & Grounds', icon: '🌿', items: ['Roof visible condition (from ground)', 'Gutters & downspouts', 'Siding, paint, trim condition', 'Walkways, driveway, patio', 'Landscaping & irrigation', 'Pool / hot tub (if applicable)'] },
 ];
 
