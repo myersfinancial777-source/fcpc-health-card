@@ -6,7 +6,6 @@ const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 export function initEmailJS() {
-  // No-op: key is now passed directly in each send call
   if (!PUBLIC_KEY) {
     console.warn('EmailJS PUBLIC_KEY not set in environment variables.');
   } else {
@@ -15,31 +14,31 @@ export function initEmailJS() {
 }
 
 function getCompInfo(i) {
-  const t = Object.keys(i.statuses).length;
-  const d = Object.values(i.statuses).filter(v => v != null).length;
+  var t = Object.keys(i.statuses).length;
+  var d = Object.values(i.statuses).filter(function(v) { return v != null; }).length;
   return { done: d, total: t, pct: t > 0 ? Math.round((d / t) * 100) : 0 };
 }
 
 function getCounts(i) {
-  const c = { good: 0, fair: 0, attention: 0, na: 0 };
-  Object.values(i.statuses).forEach(v => { if (v && c[v] !== undefined) c[v]++; });
+  var c = { good: 0, fair: 0, attention: 0, na: 0 };
+  Object.values(i.statuses).forEach(function(v) { if (v && c[v] !== undefined) c[v]++; });
   return c;
 }
 
 export function buildEmailBody(insp) {
-  const { done, total, pct } = getCompInfo(insp);
-  const counts = getCounts(insp);
-  const addr = insp.propertyAddress || 'Property';
-  const line = '==================================';
+  var ci = getCompInfo(insp);
+  var counts = getCounts(insp);
+  var addr = insp.propertyAddress || 'Property';
+  var line = '==================================';
 
-  let b = 'PROPERTY HEALTH CARD \u2014 INSPECTION REPORT\n';
+  var b = 'PROPERTY HEALTH CARD \u2014 INSPECTION REPORT\n';
   b += line + '\n\n';
   b += 'Property: ' + addr + '\n';
   if (insp.unitSuite) b += 'Unit: ' + insp.unitSuite + '\n';
   b += 'Owner/Manager: ' + (insp.ownerManager || '\u2014') + '\n';
   b += 'Plan Tier: ' + (insp.planTier || '\u2014') + '\n';
   b += 'Date: ' + insp.date + '\n\n';
-  b += 'RESULTS: ' + done + '/' + total + ' items (' + pct + '%)\n';
+  b += 'RESULTS: ' + ci.done + '/' + ci.total + ' items (' + ci.pct + '%)\n';
   b += '\u2713 Good: ' + counts.good + '  |  ~ Fair: ' + counts.fair + '  |  ! Attention: ' + counts.attention + '  |  N/A: ' + counts.na + '\n';
   b += 'Overall Rating: ' + (insp.overallRating || 'Not yet rated') + '\n\n';
   b += line + '\nDETAILED RESULTS\n' + line + '\n\n';
@@ -85,15 +84,13 @@ export function buildEmailBody(insp) {
 }
 
 export async function sendEmail(toEmail, insp) {
-  if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
-    return { ok: false, msg: 'Missing: ' + (!SERVICE_ID ? 'SERVICE_ID ' : '') + (!TEMPLATE_ID ? 'TEMPLATE_ID ' : '') + (!PUBLIC_KEY ? 'PUBLIC_KEY' : '') };
-  } {
-    console.error('EmailJS config missing:', {
-      SERVICE_ID: !!SERVICE_ID,
-      TEMPLATE_ID: !!TEMPLATE_ID,
-      PUBLIC_KEY: !!PUBLIC_KEY
-    });
-    return { ok: false, msg: 'EmailJS not configured. Check environment variables.' };
+  var missing = '';
+  if (!SERVICE_ID) missing += 'SERVICE_ID ';
+  if (!TEMPLATE_ID) missing += 'TEMPLATE_ID ';
+  if (!PUBLIC_KEY) missing += 'PUBLIC_KEY ';
+
+  if (missing) {
+    return { ok: false, msg: 'Missing env vars: ' + missing.trim() + '. Check Vercel environment variables (must start with VITE_).' };
   }
 
   var addr = insp.propertyAddress || 'Property';
@@ -112,8 +109,7 @@ export async function sendEmail(toEmail, insp) {
     if (result.status === 200) return { ok: true, msg: 'Email sent successfully!' };
     return { ok: false, msg: 'Send failed. Try again.' };
   } catch (err) {
-    console.error('EmailJS error:', err);
     var errorMsg = (err && err.text) || (err && err.message) || 'Unknown error';
-    return { ok: false, msg: errorMsg };
+    return { ok: false, msg: 'EmailJS error: ' + errorMsg + ' (Key length: ' + PUBLIC_KEY.length + ')' };
   }
 }
