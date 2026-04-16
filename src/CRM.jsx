@@ -240,7 +240,7 @@ export function ClientDetail({ clientId, onBack, onStartInspection, onOpenInspec
 
                 <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                   <button onClick={(e) => { e.stopPropagation(); onStartInspection(client, prop); }} style={{ ...S.smallBtn, background: TEAL, color: '#fff' }}>
-                    \u{1F4CB} New inspection
+                    {'\u{1F4CB}'} New inspection
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); setEditingPropId(prop.id); }} style={{ ...S.smallBtn, background: LIGHT_GRAY, color: DARK_GRAY }}>
                     Edit
