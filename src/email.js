@@ -86,6 +86,8 @@ export function buildEmailBody(insp) {
 
 export async function sendEmail(toEmail, insp) {
   if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
+    return { ok: false, msg: 'Missing: ' + (!SERVICE_ID ? 'SERVICE_ID ' : '') + (!TEMPLATE_ID ? 'TEMPLATE_ID ' : '') + (!PUBLIC_KEY ? 'PUBLIC_KEY' : '') };
+  } {
     console.error('EmailJS config missing:', {
       SERVICE_ID: !!SERVICE_ID,
       TEMPLATE_ID: !!TEMPLATE_ID,
