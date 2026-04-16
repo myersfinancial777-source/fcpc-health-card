@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { NAVY, TEAL, TEAL_LIGHT, TEAL_MED, DARK_GRAY, MED_GRAY, LIGHT_GRAY, BORDER_GRAY, PLAN_TIERS } from './constants.js';
+import { NAVY, TEAL, TEAL_LIGHT, TEAL_MED, DARK_GRAY, MED_GRAY, LIGHT_GRAY, BORDER_GRAY, PLAN_TIERS, STATUS_OPTIONS } from './constants.js';
 import { loadClients, saveClient, deleteClient, loadProperties, saveProperty, deleteProperty, loadInspectionsForProperty } from './db-crm.js';
-import { genId, getCompInfo, getCounts } from './utils.js';
+import { genId, getCompInfo, getCounts, getTotalPhotos } from './utils.js';
 
 const F = { fontFamily: "'DM Sans', sans-serif" };
 
-// ── Client list ─────────────────────────────────────
+// â”€â”€ Client list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export function ClientList({ onSelectClient, onNewClient }) {
   const [clients, setClients] = useState([]);
@@ -32,7 +32,7 @@ export function ClientList({ onSelectClient, onNewClient }) {
 
       {!loading && filtered.length === 0 && (
         <div style={S.empty}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>👤</div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>ðŸ‘¤</div>
           <div style={{ fontSize: 15, fontWeight: 600, color: NAVY, ...F }}>{search ? 'No clients match' : 'No clients yet'}</div>
           <div style={{ fontSize: 13, color: MED_GRAY, marginTop: 4, ...F }}>Tap "+ Add Client" to get started</div>
         </div>
@@ -50,7 +50,7 @@ export function ClientList({ onSelectClient, onNewClient }) {
                 {client.company && <div style={{ fontSize: 12, color: TEAL, fontWeight: 600, ...F }}>{client.company}</div>}
                 <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 4, ...F }}>
                   {client.email && <span>{client.email}</span>}
-                  {client.email && client.phone && <span> · </span>}
+                  {client.email && client.phone && <span> Â· </span>}
                   {client.phone && <span>{client.phone}</span>}
                 </div>
               </div>
@@ -65,7 +65,7 @@ export function ClientList({ onSelectClient, onNewClient }) {
   );
 }
 
-// ── Client form (add/edit) ──────────────────────────
+// â”€â”€ Client form (add/edit) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export function ClientForm({ clientId, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -129,9 +129,9 @@ export function ClientForm({ clientId, onSave, onCancel }) {
   );
 }
 
-// ── Client detail (with properties list) ────────────
+// â”€â”€ Client detail (with properties & inspection history) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-export function ClientDetail({ clientId, onBack, onStartInspection }) {
+export function ClientDetail({ clientId, onBack, onStartInspection, onOpenInspection }) {
   const [client, setClient] = useState(null);
   const [properties, setProperties] = useState([]);
   const [editing, setEditing] = useState(false);
@@ -183,8 +183,8 @@ export function ClientDetail({ clientId, onBack, onStartInspection }) {
         <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', ...F }}>{client.first_name} {client.last_name}</div>
         {client.company && <div style={{ fontSize: 13, color: TEAL_MED, fontWeight: 600, marginTop: 2, ...F }}>{client.company}</div>}
         <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {client.email && <div style={{ fontSize: 12, color: TEAL_MED, ...F }}>✉ {client.email}</div>}
-          {client.phone && <div style={{ fontSize: 12, color: TEAL_MED, ...F }}>📱 {client.phone}</div>}
+          {client.email && <div style={{ fontSize: 12, color: TEAL_MED, ...F }}>âœ‰ {client.email}</div>}
+          {client.phone && <div style={{ fontSize: 12, color: TEAL_MED, ...F }}>ðŸ“± {client.phone}</div>}
         </div>
         {client.notes && <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)', marginTop: 8, fontStyle: 'italic', ...F }}>{client.notes}</div>}
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -201,7 +201,7 @@ export function ClientDetail({ clientId, onBack, onStartInspection }) {
 
       {properties.length === 0 && (
         <div style={S.empty}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🏠</div>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>ðŸ </div>
           <div style={{ fontSize: 13, fontWeight: 600, color: NAVY, ...F }}>No properties yet</div>
           <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 4, ...F }}>Add a property to start tracking inspections</div>
         </div>
@@ -219,28 +219,28 @@ export function ClientDetail({ clientId, onBack, onStartInspection }) {
                   {prop.unit_suite && <div style={{ fontSize: 12, color: MED_GRAY, ...F }}>Unit: {prop.unit_suite}</div>}
                   <div style={{ fontSize: 11, color: MED_GRAY, marginTop: 2, ...F }}>
                     {prop.city}, {prop.state} {prop.zip || ''}
-                    {prop.plan_tier && <span> · {prop.plan_tier} plan</span>}
+                    {prop.plan_tier && <span> Â· {prop.plan_tier} plan</span>}
                   </div>
                   {(prop.bedrooms || prop.bathrooms || prop.sqft) && (
                     <div style={{ fontSize: 11, color: MED_GRAY, marginTop: 2, ...F }}>
                       {prop.bedrooms && <span>{prop.bedrooms} bed</span>}
-                      {prop.bathrooms && <span> · {prop.bathrooms} bath</span>}
-                      {prop.sqft && <span> · {prop.sqft} sqft</span>}
+                      {prop.bathrooms && <span> Â· {prop.bathrooms} bath</span>}
+                      {prop.sqft && <span> Â· {prop.sqft} sqft</span>}
                     </div>
                   )}
                 </div>
-                <span style={{ color: TEAL_MED, fontSize: 18, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+                <span style={{ color: TEAL_MED, fontSize: 18, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>â–¾</span>
               </div>
             </div>
 
             {expanded && (
               <div style={{ background: '#fff', borderRadius: '0 0 14px 14px', border: `1px solid ${BORDER_GRAY}`, borderTop: 'none', padding: 14, marginTop: -10 }}>
-                {prop.access_notes && <div style={{ fontSize: 12, color: MED_GRAY, marginBottom: 10, ...F }}>🔑 {prop.access_notes}</div>}
+                {prop.access_notes && <div style={{ fontSize: 12, color: MED_GRAY, marginBottom: 10, ...F }}>ðŸ”‘ {prop.access_notes}</div>}
                 {prop.notes && <div style={{ fontSize: 12, color: MED_GRAY, marginBottom: 10, fontStyle: 'italic', ...F }}>{prop.notes}</div>}
 
                 <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                   <button onClick={(e) => { e.stopPropagation(); onStartInspection(client, prop); }} style={{ ...S.smallBtn, background: TEAL, color: '#fff' }}>
-                    📋 New inspection
+                    ðŸ“‹ New inspection
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); setEditingPropId(prop.id); }} style={{ ...S.smallBtn, background: LIGHT_GRAY, color: DARK_GRAY }}>
                     Edit
@@ -250,23 +250,61 @@ export function ClientDetail({ clientId, onBack, onStartInspection }) {
                   </button>
                 </div>
 
-                {/* Inspection history */}
-                <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 8, ...F }}>Inspection history</div>
+                {/* â”€â”€ Inspection history (tappable) â”€â”€ */}
+                <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 8, ...F }}>
+                  Inspection history
+                  {insps.length > 0 && <span style={{ fontWeight: 500, color: MED_GRAY }}> ({insps.length})</span>}
+                </div>
                 {insps.length === 0 && <div style={{ fontSize: 12, color: MED_GRAY, ...F }}>No inspections yet for this property</div>}
                 {insps.map(insp => {
+                  const inspId = insp.id;
                   const { pct } = getCompInfo(insp);
                   const counts = getCounts(insp);
+                  const rating = insp.overall_rating || insp.overallRating || '';
+                  const photoCount = getTotalPhotos(insp);
+                  const ratingColor = rating === 'Excellent' ? '#22C55E' : rating === 'Good' ? TEAL : rating === 'Fair' ? '#F59E0B' : rating === 'Needs Attention' ? '#EF4444' : MED_GRAY;
+
                   return (
-                    <div key={insp.id} style={{ padding: '8px 0', borderBottom: `1px solid ${BORDER_GRAY}44`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: DARK_GRAY, ...F }}>{insp.date}</div>
-                        <div style={{ fontSize: 11, color: MED_GRAY, ...F }}>
-                          {insp.overall_rating || insp.overallRating || 'Not rated'}
-                          {counts.attention > 0 && <span style={{ color: '#EF4444', fontWeight: 600 }}> · {counts.attention} attention</span>}
+                    <div
+                      key={inspId}
+                      onClick={(e) => { e.stopPropagation(); onOpenInspection(inspId); }}
+                      style={{
+                        padding: '10px 12px',
+                        marginBottom: 6,
+                        background: LIGHT_GRAY,
+                        borderRadius: 10,
+                        border: `1px solid ${BORDER_GRAY}`,
+                        cursor: 'pointer',
+                        transition: 'all .15s',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: DARK_GRAY, ...F }}>{insp.date || 'No date'}</div>
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+                            {rating && (
+                              <span style={{
+                                fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 8,
+                                background: ratingColor + '15', color: ratingColor, ...F,
+                              }}>{rating}</span>
+                            )}
+                            {counts.good > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#22C55E', ...F }}>âœ“{counts.good}</span>}
+                            {counts.fair > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#F59E0B', ...F }}>~{counts.fair}</span>}
+                            {counts.attention > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#EF4444', ...F }}>!{counts.attention}</span>}
+                            {photoCount > 0 && <span style={{ fontSize: 10, color: MED_GRAY, ...F }}>ðŸ“·{photoCount}</span>}
+                          </div>
                         </div>
-                      </div>
-                      <div style={{ width: 34, height: 34, borderRadius: '50%', border: `2px solid ${pct === 100 ? '#22C55E' : TEAL}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: pct === 100 ? '#22C55E' : TEAL, ...F }}>{pct}%</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{
+                            width: 36, height: 36, borderRadius: '50%',
+                            border: `2.5px solid ${pct === 100 ? '#22C55E' : TEAL}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: pct === 100 ? '#22C55E' : TEAL, ...F }}>{pct}%</span>
+                          </div>
+                          <span style={{ fontSize: 14, color: TEAL_MED }}>â€º</span>
+                        </div>
                       </div>
                     </div>
                   );
@@ -280,7 +318,7 @@ export function ClientDetail({ clientId, onBack, onStartInspection }) {
   );
 }
 
-// ── Property form (add/edit) ────────────────────────
+// â”€â”€ Property form (add/edit) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export function PropertyForm({ clientId, propertyId, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -388,7 +426,7 @@ export function PropertyForm({ clientId, propertyId, onSave, onCancel }) {
   );
 }
 
-// ── Shared styles ───────────────────────────────────
+// â”€â”€ Shared styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const S = {
   primaryBtn: { background: `linear-gradient(135deg,${TEAL},#1a9e8e)`, color: '#fff', border: 'none', borderRadius: 24, padding: '10px 22px', fontSize: 13, fontWeight: 700, cursor: 'pointer', ...F, boxShadow: `0 4px 14px ${TEAL}44` },
