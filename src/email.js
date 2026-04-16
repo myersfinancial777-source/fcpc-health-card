@@ -6,11 +6,7 @@ const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 export function initEmailJS() {
-  if (!PUBLIC_KEY) {
-    console.warn('EmailJS PUBLIC_KEY not set in environment variables.');
-  } else {
-    console.log('EmailJS ready. Key length:', PUBLIC_KEY.length);
-  }
+  // Key is passed directly in each send call
 }
 
 function getCompInfo(i) {
@@ -84,13 +80,8 @@ export function buildEmailBody(insp) {
 }
 
 export async function sendEmail(toEmail, insp) {
-  var missing = '';
-  if (!SERVICE_ID) missing += 'SERVICE_ID ';
-  if (!TEMPLATE_ID) missing += 'TEMPLATE_ID ';
-  if (!PUBLIC_KEY) missing += 'PUBLIC_KEY ';
-
-  if (missing) {
-    return { ok: false, msg: 'Missing env vars: ' + missing.trim() + '. Check Vercel environment variables (must start with VITE_).' };
+  if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
+    return { ok: false, msg: 'EmailJS not configured. Check environment variables.' };
   }
 
   var addr = insp.propertyAddress || 'Property';
@@ -110,6 +101,6 @@ export async function sendEmail(toEmail, insp) {
     return { ok: false, msg: 'Send failed. Try again.' };
   } catch (err) {
     var errorMsg = (err && err.text) || (err && err.message) || 'Unknown error';
-    return { ok: false, msg: 'EmailJS error: ' + errorMsg + ' (Key length: ' + PUBLIC_KEY.length + ')' };
+    return { ok: false, msg: errorMsg };
   }
 }
