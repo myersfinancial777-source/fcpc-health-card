@@ -24,7 +24,7 @@ function createBlank(client, property) {
   };
 }
 
-/* â”€â”€ Reusable Components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Reusable Components --------------------------- */
 function StatusPill({ status, onSelect }) {
   return (<div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>{STATUS_OPTIONS.map(o => { const a = status === o.key; return (
     <button key={o.key} onClick={() => onSelect(a ? null : o.key)} style={{ border: `2px solid ${a ? o.color : BORDER_GRAY}`, background: a ? o.color + '18' : '#fff', borderRadius: 20, padding: '4px 10px', fontSize: 11, fontWeight: a ? 700 : 500, color: a ? o.color : MED_GRAY, cursor: 'pointer', transition: 'all .15s', ...F, whiteSpace: 'nowrap', WebkitTapHighlightColor: 'transparent' }}><span style={{ marginRight: 3 }}>{o.icon}</span>{o.label}</button>); })}</div>);
@@ -50,17 +50,17 @@ function PhotoRow({ photos, onAdd, onRemove, onTap }) {
   return (<div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8, alignItems: 'center' }}>
     {photos.map((src, i) => (<div key={i} style={{ position: 'relative', width: 56, height: 56, borderRadius: 8, overflow: 'hidden', border: `1px solid ${BORDER_GRAY}`, flexShrink: 0 }}>
       <img src={src} alt="" onClick={() => onTap?.(src)} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} />
-      <button onClick={e => { e.stopPropagation(); onRemove(i); }} style={{ position: 'absolute', top: -2, right: -2, width: 20, height: 20, borderRadius: '50%', background: '#EF4444', color: '#fff', border: 'none', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', lineHeight: 1 }}>Ã—</button></div>))}
+      <button onClick={e => { e.stopPropagation(); onRemove(i); }} style={{ position: 'absolute', top: -2, right: -2, width: 20, height: 20, borderRadius: '50%', background: '#EF4444', color: '#fff', border: 'none', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', lineHeight: 1 }}>{'\u00D7'}</button></div>))}
     <button onClick={() => camRef.current?.click()} style={{ width: 56, height: 56, borderRadius: 8, border: `2px dashed ${TEAL}`, background: TEAL_LIGHT, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-      <span style={{ fontSize: 18, lineHeight: 1 }}>ðŸ“¸</span><span style={{ fontSize: 7, color: TEAL, fontWeight: 700, ...F, marginTop: 1 }}>Camera</span></button>
+      <span style={{ fontSize: 18, lineHeight: 1 }}>{'\u{1F4F8}'}</span><span style={{ fontSize: 7, color: TEAL, fontWeight: 700, ...F, marginTop: 1 }}>Camera</span></button>
     <button onClick={() => fileRef.current?.click()} style={{ width: 56, height: 56, borderRadius: 8, border: `2px dashed ${BORDER_GRAY}`, background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-      <span style={{ fontSize: 18, lineHeight: 1 }}>ðŸ–¼ï¸</span><span style={{ fontSize: 7, color: MED_GRAY, fontWeight: 700, ...F, marginTop: 1 }}>Gallery</span></button>
+      <span style={{ fontSize: 18, lineHeight: 1 }}>{'\u{1F5BC}\uFE0F'}</span><span style={{ fontSize: 7, color: MED_GRAY, fontWeight: 700, ...F, marginTop: 1 }}>Gallery</span></button>
     <input ref={camRef} type="file" accept="image/*" capture="environment" onChange={proc} style={{ display: 'none' }} />
     <input ref={fileRef} type="file" accept="image/*" multiple onChange={proc} style={{ display: 'none' }} />
   </div>);
 }
 
-function Lightbox({ src, onClose }) { if (!src) return null; return (<div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.88)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}><img src={src} alt="" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: 8, objectFit: 'contain' }} /><button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,.2)', color: '#fff', border: 'none', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Ã—</button></div>); }
+function Lightbox({ src, onClose }) { if (!src) return null; return (<div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.88)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}><img src={src} alt="" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: 8, objectFit: 'contain' }} /><button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,.2)', color: '#fff', border: 'none', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button></div>); }
 
 function ItemNote({ value, onChange }) {
   return (<textarea value={value} onChange={e => onChange(e.target.value)} placeholder="Add a note about this item..."
@@ -85,17 +85,17 @@ function EmailModal({ inspection, onClose }) {
       <div style={{ fontSize: 12, color: MED_GRAY, marginBottom: 16, ...F, lineHeight: 1.5 }}>Sends a detailed inspection report to the customer's email.</div>
       <input value={email} onChange={e => { setEmail(e.target.value); if (status === 'error') setStatus('idle'); }} placeholder="customer@email.com" type="email"
         style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: `2px solid ${status === 'error' ? '#EF4444' : email ? TEAL : BORDER_GRAY}`, fontSize: 14, ...F, outline: 'none', boxSizing: 'border-box', marginBottom: 8, background: LIGHT_GRAY }} />
-      {msg && <div style={{ fontSize: 12, padding: '8px 12px', borderRadius: 8, marginBottom: 8, ...F, fontWeight: 600, background: status === 'sent' ? '#22C55E15' : '#EF444415', color: status === 'sent' ? '#22C55E' : '#EF4444' }}>{status === 'sent' ? 'âœ“ ' : 'âœ— '}{msg}</div>}
+      {msg && <div style={{ fontSize: 12, padding: '8px 12px', borderRadius: 8, marginBottom: 8, ...F, fontWeight: 600, background: status === 'sent' ? '#22C55E15' : '#EF444415', color: status === 'sent' ? '#22C55E' : '#EF4444' }}>{status === 'sent' ? '- ' : '- '}{msg}</div>}
       <button onClick={handleSend} disabled={status === 'sending' || status === 'sent'}
         style={{ width: '100%', background: status === 'sent' ? '#22C55E' : `linear-gradient(135deg,${TEAL},#1a9e8e)`, color: '#fff', border: 'none', borderRadius: 14, padding: '14px', fontSize: 14, fontWeight: 700, cursor: status === 'sending' ? 'wait' : 'pointer', ...F, boxShadow: `0 4px 14px ${TEAL}44`, opacity: status === 'sending' ? .7 : 1, marginBottom: 10 }}>
-        {status === 'sending' ? 'Sending...' : status === 'sent' ? 'âœ“ Sent!' : 'âœ‰ Send Email'}</button>
+        {status === 'sending' ? 'Sending...' : status === 'sent' ? '- Sent!' : '- Send Email'}</button>
       <button onClick={onClose} style={{ width: '100%', background: 'transparent', border: `2px solid ${BORDER_GRAY}`, borderRadius: 14, padding: '12px', fontSize: 13, fontWeight: 600, color: MED_GRAY, cursor: 'pointer', ...F }}>Cancel</button>
     </div></div>);
 }
 
-/* â”€â”€ PDF Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- PDF Preview ----------------------------------- */
 function PdfPreview({ inspection, onClose }) {
-  const sL = k => STATUS_OPTIONS.find(o => o.key === k)?.label || 'â€”';
+  const sL = k => STATUS_OPTIONS.find(o => o.key === k)?.label || '\u2014';
   const sC = k => STATUS_OPTIONS.find(o => o.key === k)?.color || MED_GRAY;
   const counts = getCounts(inspection);
   const { done, total } = getCompInfo(inspection);
@@ -105,9 +105,9 @@ function PdfPreview({ inspection, onClose }) {
   return (<div id="pdf-preview-root">
     <style>{`@media print { body * { visibility: hidden !important; } #pdf-preview-root, #pdf-preview-root * { visibility: visible !important; } #pdf-preview-root { position: absolute; left: 0; top: 0; width: 100%; } .no-print { display: none !important; } .no-break { break-inside: avoid; } .page-break { break-before: page; } }`}</style>
     <div className="no-print" style={{ position: 'sticky', top: 0, zIndex: 200, background: NAVY, padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `3px solid ${TEAL}` }}>
-      <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: TEAL_MED, fontSize: 14, fontWeight: 600, cursor: 'pointer', ...F }}>â† Back</button>
+      <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: TEAL_MED, fontSize: 14, fontWeight: 600, cursor: 'pointer', ...F }}>{'\u2190'} Back</button>
       <span style={{ color: '#fff', fontWeight: 700, fontSize: 14, ...F }}>PDF Preview</span>
-      <button onClick={() => window.print()} style={{ background: TEAL, color: '#fff', border: 'none', borderRadius: 20, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', ...F }}>ðŸ–¨ Print / Save</button>
+      <button onClick={() => window.print()} style={{ background: TEAL, color: '#fff', border: 'none', borderRadius: 20, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', ...F }}>{'\u{1F5A8}'} Print / Save</button>
     </div>
     <div style={{ background: '#fff', maxWidth: 800, margin: '0 auto', boxShadow: '0 2px 20px rgba(0,0,0,.1)' }}>
       <div style={{ background: NAVY, color: '#fff', padding: '18px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -118,7 +118,7 @@ function PdfPreview({ inspection, onClose }) {
       <div style={{ height: 3, background: `linear-gradient(90deg,${TEAL},${TEAL_MED})` }} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px 20px', padding: '12px 28px', background: LIGHT_GRAY, borderBottom: `1px solid ${BORDER_GRAY}` }}>
         {[{ l: 'Property Address', v: inspection.propertyAddress, span: 2 }, { l: 'Unit / Suite', v: inspection.unitSuite }, { l: 'Owner / Manager', v: inspection.ownerManager }, { l: 'Plan Tier', v: inspection.planTier }, { l: 'Date', v: inspection.date }].map((f, i) => (
-          <div key={i} style={f.span ? { gridColumn: 'span 2' } : {}}><div style={{ fontSize: 8, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: .5 }}>{f.l}</div><div style={{ fontSize: 12, fontWeight: 600, color: NAVY, marginTop: 1 }}>{f.v || 'â€”'}</div></div>))}</div>
+          <div key={i} style={f.span ? { gridColumn: 'span 2' } : {}}><div style={{ fontSize: 8, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: .5 }}>{f.l}</div><div style={{ fontSize: 12, fontWeight: 600, color: NAVY, marginTop: 1 }}>{f.v || '\u2014'}</div></div>))}</div>
       <div style={{ display: 'flex', gap: 14, padding: '10px 28px', borderBottom: `1px solid ${BORDER_GRAY}`, alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: NAVY }}>STATUS:</span>
         {STATUS_OPTIONS.map(o => <div key={o.key} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600 }}><div style={{ width: 9, height: 9, borderRadius: '50%', background: o.color }} />{o.label}: <strong>{counts[o.key]}</strong></div>)}
@@ -128,17 +128,17 @@ function PdfPreview({ inspection, onClose }) {
         {sec.items.map((item, idx) => { const s = inspection.statuses[item], sc = sC(s), sl = sL(s), hasP = (inspection.photos?.[item] || []).length > 0, note = inspection.itemNotes?.[item] || ''; return (<div key={item}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 28px', fontSize: 11, borderBottom: `1px solid ${BORDER_GRAY}15`, background: idx % 2 === 0 ? '#fff' : LIGHT_GRAY }}>
             <div style={{ flex: 1 }}>{item}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{hasP && <span style={{ fontSize: 8, color: TEAL, fontWeight: 600 }}>ðŸ“·</span>}<div style={{ fontWeight: 700, fontSize: 10, padding: '2px 10px', borderRadius: 10, background: sc + '15', color: sc, border: `1px solid ${sc}33`, minWidth: 70, textAlign: 'center' }}>{sl}</div></div></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{hasP && <span style={{ fontSize: 8, color: TEAL, fontWeight: 600 }}>{'\u{1F4F7}'}</span>}<div style={{ fontWeight: 700, fontSize: 10, padding: '2px 10px', borderRadius: 10, background: sc + '15', color: sc, border: `1px solid ${sc}33`, minWidth: 70, textAlign: 'center' }}>{sl}</div></div></div>
           {note && <div style={{ padding: '2px 28px 6px 42px', fontSize: 10, color: '#92400E', background: idx % 2 === 0 ? '#fff' : LIGHT_GRAY, fontStyle: 'italic' }}>Note: {note}</div>}</div>); })}</div>))}
       {inspection.notes && <div className="no-break" style={{ padding: '14px 28px', borderTop: `1px solid ${BORDER_GRAY}` }}><div style={{ fontSize: 10, fontWeight: 700, color: TEAL, textTransform: 'uppercase', marginBottom: 4 }}>Notes & Observations</div><div style={{ fontSize: 11, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{inspection.notes}</div></div>}
       {inspection.overallRating && <div className="no-break" style={{ background: TEAL_LIGHT, border: `1px solid ${TEAL}44`, borderRadius: 6, margin: '10px 28px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ fontSize: 11, fontWeight: 700, color: NAVY }}>OVERALL PROPERTY RATING:</span><span style={{ fontSize: 13, fontWeight: 800, color: TEAL }}>{inspection.overallRating}</span></div>}
       {att.length > 0 && <div className="no-break" style={{ margin: '10px 28px', padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 6 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#DC2626', marginBottom: 5 }}>âš  Items Requiring Attention</div>
-        {att.map((a, i) => <div key={i} style={{ fontSize: 10, color: '#991B1B', padding: '2px 0', borderBottom: '1px solid #FECACA' }}><strong>{a.section}:</strong> {a.item}{a.note ? ` â€” ${a.note}` : ''}</div>)}</div>}
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#DC2626', marginBottom: 5 }}>{'\u26A0'} Items Requiring Attention</div>
+        {att.map((a, i) => <div key={i} style={{ fontSize: 10, color: '#991B1B', padding: '2px 0', borderBottom: '1px solid #FECACA' }}><strong>{a.section}:</strong> {a.item}{a.note ? ` \u2014 ${a.note}` : ''}</div>)}</div>}
       <div className="no-break" style={{ display: 'flex', gap: 28, padding: '24px 28px 12px' }}>
         <div style={{ flex: 1, borderTop: `1px solid ${NAVY}`, paddingTop: 4, fontSize: 8, color: MED_GRAY }}>Inspector Signature</div>
         <div style={{ flex: 1, borderTop: `1px solid ${NAVY}`, paddingTop: 4, fontSize: 8, color: MED_GRAY }}>Date</div></div>
-      {photoEntries.length > 0 && <><div className="page-break" /><div style={{ background: NAVY, color: '#fff', padding: '10px 28px', fontSize: 13, fontWeight: 700, borderLeft: `4px solid ${TEAL}`, marginTop: 8 }}>ðŸ“· Photo Documentation</div>
+      {photoEntries.length > 0 && <><div className="page-break" /><div style={{ background: NAVY, color: '#fff', padding: '10px 28px', fontSize: 13, fontWeight: 700, borderLeft: `4px solid ${TEAL}`, marginTop: 8 }}>{'\u{1F4F7}'} Photo Documentation</div>
         {photoEntries.map((pe, idx) => <div key={idx} className="no-break" style={{ padding: '10px 28px', borderBottom: `1px solid ${BORDER_GRAY}22` }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: NAVY, marginBottom: 1 }}>{pe.item}</div><div style={{ fontSize: 9, color: MED_GRAY, marginBottom: 6 }}>{pe.section}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>{pe.pics.map((src, j) => <img key={j} src={src} alt="" style={{ width: 200, height: 150, objectFit: 'cover', borderRadius: 4, border: `1px solid ${BORDER_GRAY}` }} />)}</div></div>)}</>}
@@ -146,7 +146,7 @@ function PdfPreview({ inspection, onClose }) {
     </div></div>);
 }
 
-/* â”€â”€ Main App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Main App ------------------------------------ */
 export default function App() {
   const [inspections, setInspections] = useState([]);
   const [currentId, setCurrentId] = useState(null);
@@ -192,7 +192,7 @@ export default function App() {
   function TabBar() {
     return (
       <div style={{ display: 'flex', background: '#fff', borderBottom: `1px solid ${BORDER_GRAY}`, position: 'sticky', top: 0, zIndex: 99 }}>
-        {[{ key: 'inspections', label: 'ðŸ“‹ Inspections' }, { key: 'clients', label: 'ðŸ‘¤ Clients' }].map(t => (
+        {[{ key: 'inspections', label: '\u{1F4CB} Inspections' }, { key: 'clients', label: '\u{1F464} Clients' }].map(t => (
           <button key={t.key} onClick={() => { setTab(t.key); setView('list'); setCrmView('list'); setCurrentId(null); }}
             style={{ flex: 1, padding: '12px', background: tab === t.key ? '#fff' : LIGHT_GRAY, border: 'none',
               borderBottom: tab === t.key ? `3px solid ${TEAL}` : '3px solid transparent',
@@ -207,7 +207,7 @@ export default function App() {
 
   if (view === 'pdf' && cur) return <PdfPreview inspection={cur} onClose={() => setView('summary')} />;
 
-  /* â”€â”€ LIST (with tabs) â”€â”€ */
+  /* -- LIST (with tabs) -- */
   if (view === 'list') return (
     <div style={S.app}>
       <div style={S.header}>
@@ -219,7 +219,7 @@ export default function App() {
       </div>
       <TabBar />
       <div style={S.body}>
-        {/* â”€â”€ Clients tab â”€â”€ */}
+        {/* -- Clients tab -- */}
         {tab === 'clients' && crmView === 'list' && (
           <ClientList
             onSelectClient={(id) => { setSelectedClientId(id); setCrmView('detail'); }}
@@ -248,22 +248,22 @@ export default function App() {
           />
         )}
 
-        {/* â”€â”€ Inspections tab â”€â”€ */}
+        {/* -- Inspections tab -- */}
         {tab === 'inspections' && <>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ margin: 0, fontSize: 18, color: NAVY, ...F, fontWeight: 700 }}>Inspections</h2>
           <button onClick={() => startNew()} style={S.primaryBtn}>+ New</button></div>
-        {inspections.length === 0 && <div style={S.empty}><div style={{ fontSize: 40, marginBottom: 12 }}>ðŸ“‹</div><div style={{ fontSize: 15, fontWeight: 600, color: NAVY, ...F }}>No inspections yet</div><div style={{ fontSize: 13, color: MED_GRAY, marginTop: 4, ...F }}>Tap "+ New" or start one from a client's property</div></div>}
+        {inspections.length === 0 && <div style={S.empty}><div style={{ fontSize: 40, marginBottom: 12 }}>{'\u{1F4CB}'}</div><div style={{ fontSize: 15, fontWeight: 600, color: NAVY, ...F }}>No inspections yet</div><div style={{ fontSize: 13, color: MED_GRAY, marginTop: 4, ...F }}>Tap "+ New" or start one from a client's property</div></div>}
         {inspections.map(insp => { const { pct } = getCompInfo(insp); const c = getCounts(insp); const pc = getTotalPhotos(insp); return (
           <div key={insp.id} style={S.card} onClick={() => openI(insp.id)}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 700, color: NAVY, ...F }}>{insp.propertyAddress || 'Untitled Property'}</div>
                 {insp.unitSuite && <div style={{ fontSize: 12, color: MED_GRAY, ...F }}>Unit: {insp.unitSuite}</div>}
-                <div style={{ fontSize: 11, color: MED_GRAY, marginTop: 2, ...F }}>{insp.date} â€¢ {insp.planTier || 'No plan'}{pc > 0 ? ` â€¢ ðŸ“· ${pc}` : ''}</div></div>
+                <div style={{ fontSize: 11, color: MED_GRAY, marginTop: 2, ...F }}>{insp.date} {'\u2022'} {insp.planTier || 'No plan'}{pc > 0 ? ` \u2022 \u{1F4F7} ${pc}` : ''}</div></div>
               <div style={{ width: 42, height: 42, borderRadius: '50%', border: `3px solid ${pct === 100 ? '#22C55E' : TEAL}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <span style={{ fontSize: 13, fontWeight: 800, color: pct === 100 ? '#22C55E' : TEAL, ...F }}>{pct}%</span></div></div>
             {Object.values(c).some(v => v > 0) && <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              {c.good > 0 && <span style={{ ...S.tag, background: '#22C55E18', color: '#22C55E' }}>âœ“ {c.good}</span>}
+              {c.good > 0 && <span style={{ ...S.tag, background: '#22C55E18', color: '#22C55E' }}>{'\u2713'} {c.good}</span>}
               {c.fair > 0 && <span style={{ ...S.tag, background: '#F59E0B18', color: '#F59E0B' }}>~ {c.fair}</span>}
               {c.attention > 0 && <span style={{ ...S.tag, background: '#EF444418', color: '#EF4444' }}>! {c.attention}</span>}</div>}
             <button onClick={e => { e.stopPropagation(); if (confirm('Delete?')) delI(insp.id); }} style={S.delBtn}>Delete</button></div>); })}
@@ -271,7 +271,7 @@ export default function App() {
 
   if (!cur) return null;
 
-  /* â”€â”€ SUMMARY â”€â”€ */
+  /* -- SUMMARY -- */
   if (view === 'summary') {
     const c = getCounts(cur); const pc = getTotalPhotos(cur);
     const pe = []; SECTIONS.forEach(s => s.items.forEach(i => { const p = cur.photos?.[i] || []; if (p.length > 0) pe.push({ section: s.title, item: i, pics: p }); }));
@@ -279,42 +279,42 @@ export default function App() {
     return (<div style={S.app}>
       <Lightbox src={lightbox} onClose={() => setLightbox(null)} />
       {showEmail && <EmailModal inspection={cur} onClose={() => setShowEmail(false)} />}
-      <div style={S.topBar}><button onClick={() => setView('form')} style={S.backBtn}>â† Back</button><span style={{ color: '#fff', fontWeight: 700, fontSize: 15, ...F }}>Summary</span><div style={{ width: 48 }} /></div>
+      <div style={S.topBar}><button onClick={() => setView('form')} style={S.backBtn}>{'\u2190'} Back</button><span style={{ color: '#fff', fontWeight: 700, fontSize: 15, ...F }}>Summary</span><div style={{ width: 48 }} /></div>
       <div style={S.body}>
         <div style={{ background: LIGHT_GRAY, borderRadius: 12, padding: 16, marginBottom: 16 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: NAVY, ...F }}>{cur.propertyAddress || 'Untitled Property'}</div>
           {cur.unitSuite && <div style={{ fontSize: 13, color: MED_GRAY }}>Unit: {cur.unitSuite}</div>}
-          <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 4 }}>{cur.date} â€¢ {cur.planTier || 'â€”'} â€¢ {cur.ownerManager || 'â€”'}</div></div>
+          <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 4 }}>{cur.date} {'\u2022'} {cur.planTier || '\u2014'} {'\u2022'} {cur.ownerManager || '\u2014'}</div></div>
         <OverallProgress statuses={cur.statuses} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
           {STATUS_OPTIONS.map(o => <div key={o.key} style={{ background: '#fff', border: `1px solid ${BORDER_GRAY}`, borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: o.color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: o.color }}>{c[o.key]}</div>
             <div style={{ fontSize: 12, fontWeight: 600, color: DARK_GRAY, ...F }}>{o.label}</div></div>)}</div>
         {c.attention > 0 && <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, padding: 14, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#DC2626', marginBottom: 8, ...F }}>âš  Items Needing Attention</div>
-          {SECTIONS.map(s => s.items.filter(i => cur.statuses[i] === 'attention').map(i => { const n = cur.itemNotes?.[i]; return <div key={i} style={{ fontSize: 12, color: '#991B1B', padding: '4px 0', borderBottom: '1px solid #FECACA' }}><span style={{ fontWeight: 600 }}>{s.title}:</span> {i}{n && <div style={{ fontSize: 11, color: '#92400E', fontStyle: 'italic', marginTop: 2, paddingLeft: 8 }}>â†³ {n}</div>}</div>; }))}</div>}
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#DC2626', marginBottom: 8, ...F }}>{'\u26A0'} Items Needing Attention</div>
+          {SECTIONS.map(s => s.items.filter(i => cur.statuses[i] === 'attention').map(i => { const n = cur.itemNotes?.[i]; return <div key={i} style={{ fontSize: 12, color: '#991B1B', padding: '4px 0', borderBottom: '1px solid #FECACA' }}><span style={{ fontWeight: 600 }}>{s.title}:</span> {i}{n && <div style={{ fontSize: 11, color: '#92400E', fontStyle: 'italic', marginTop: 2, paddingLeft: 8 }}>{'\u21B3'} {n}</div>}</div>; }))}</div>}
         {notedItems.length > 0 && <div style={{ background: '#fff', border: `1px solid ${BORDER_GRAY}`, borderRadius: 12, padding: 14, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 8, ...F }}>ðŸ“ Item Notes</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 8, ...F }}>{'\u{1F4DD}'} Item Notes</div>
           {notedItems.map((ni, idx) => { const sc = STATUS_OPTIONS.find(o => o.key === ni.status)?.color || MED_GRAY; return <div key={idx} style={{ fontSize: 12, padding: '6px 0', borderBottom: idx < notedItems.length - 1 ? `1px solid ${BORDER_GRAY}44` : 'none' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: sc, flexShrink: 0 }} /><span style={{ fontWeight: 600, color: DARK_GRAY }}>{ni.item}</span></div>
             <div style={{ fontSize: 11, color: '#92400E', fontStyle: 'italic', paddingLeft: 14, marginTop: 2 }}>{ni.note}</div></div>; })}</div>}
         {cur.overallRating && <div style={{ background: TEAL_LIGHT, borderRadius: 12, padding: 14, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ fontSize: 13, fontWeight: 700, color: NAVY }}>Overall Rating:</span><span style={{ fontSize: 14, fontWeight: 800, color: TEAL }}>{cur.overallRating}</span></div>}
         {cur.notes && <div style={{ background: '#fff', border: `1px solid ${BORDER_GRAY}`, borderRadius: 12, padding: 14, marginBottom: 16 }}><div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 6 }}>Notes</div><div style={{ fontSize: 13, color: DARK_GRAY, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{cur.notes}</div></div>}
         {pe.length > 0 && <div style={{ background: '#fff', border: `1px solid ${BORDER_GRAY}`, borderRadius: 12, padding: 14, marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 10 }}>ðŸ“· Photos ({pc})</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 10 }}>{'\u{1F4F7}'} Photos ({pc})</div>
           {pe.map((p, idx) => <div key={idx} style={{ marginBottom: 12 }}><div style={{ fontSize: 11, fontWeight: 600, color: TEAL }}>{p.section}</div><div style={{ fontSize: 12, color: DARK_GRAY, marginBottom: 6 }}>{p.item}</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{p.pics.map((src, j) => <img key={j} src={src} alt="" onClick={() => setLightbox(src)} style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, border: `1px solid ${BORDER_GRAY}`, cursor: 'pointer' }} />)}</div></div>)}</div>}
-        <button onClick={() => setView('pdf')} style={{ ...S.exportBtn, width: '100%', marginBottom: 10 }}>ðŸ“„ Preview & Print PDF</button>
-        <button onClick={() => setShowEmail(true)} style={{ ...S.emailBtn, width: '100%', marginBottom: 10 }}>âœ‰ Send to Customer</button>
+        <button onClick={() => setView('pdf')} style={{ ...S.exportBtn, width: '100%', marginBottom: 10 }}>{'\u{1F4C4}'} Preview & Print PDF</button>
+        <button onClick={() => setShowEmail(true)} style={{ ...S.emailBtn, width: '100%', marginBottom: 10 }}>{'\u2709'} Send to Customer</button>
         <button onClick={() => { setView('list'); setCurrentId(null); }} style={{ ...S.secBtn, width: '100%', marginBottom: 20 }}>Done</button></div></div>);
   }
 
-  /* â”€â”€ FORM â”€â”€ */
+  /* -- FORM -- */
   return (<div style={S.app}>
     <Lightbox src={lightbox} onClose={() => setLightbox(null)} />
     {showEmail && <EmailModal inspection={cur} onClose={() => setShowEmail(false)} />}
     <div style={S.topBar}>
-      <button onClick={() => { setView('list'); setCurrentId(null); }} style={S.backBtn}>â† Back</button>
+      <button onClick={() => { setView('list'); setCurrentId(null); }} style={S.backBtn}>{'\u2190'} Back</button>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{ color: '#fff', fontWeight: 700, fontSize: 14, ...F }}>Health Card</span>
         {saving && <span style={{ fontSize: 10, color: TEAL_MED, ...F }}>Saving...</span>}
@@ -336,13 +336,13 @@ export default function App() {
         <div key={sec.title} style={{ marginBottom: 10 }}>
           <button onClick={() => togSec(sec.title)} style={S.secHead}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}><span style={{ fontSize: 18 }}>{sec.icon}</span><div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 700, color: '#fff', ...F, textAlign: 'left' }}>{sec.title}</div><SectionProgress section={sec} statuses={cur.statuses} /></div></div>
-            <span style={{ color: TEAL_MED, fontSize: 18, transition: 'transform .2s', transform: exp ? 'rotate(180deg)' : 'rotate(0deg)' }}>â–¾</span></button>
+            <span style={{ color: TEAL_MED, fontSize: 18, transition: 'transform .2s', transform: exp ? 'rotate(180deg)' : 'rotate(0deg)' }}>{'\u25BE'}</span></button>
           {exp && <div style={{ background: '#fff', borderRadius: '0 0 12px 12px', border: `1px solid ${BORDER_GRAY}`, borderTop: 'none', overflow: 'hidden' }}>
             {sec.items.map((item, idx) => { const ip = cur.photos?.[item] || []; const st = cur.statuses[item]; const showNote = st && st !== 'good'; const noteVal = cur.itemNotes?.[item] || ''; return (
               <div key={item} style={{ padding: '12px 14px', background: idx % 2 === 0 ? '#fff' : LIGHT_GRAY, borderBottom: idx < sec.items.length - 1 ? `1px solid ${BORDER_GRAY}44` : 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <div style={{ fontSize: 13, color: DARK_GRAY, fontWeight: 500, ...F, flex: 1 }}>{item}</div>
-                  {ip.length > 0 && <span style={{ fontSize: 10, color: TEAL, fontWeight: 600, ...F }}>ðŸ“· {ip.length}</span>}</div>
+                  {ip.length > 0 && <span style={{ fontSize: 10, color: TEAL, fontWeight: 600, ...F }}>{'\u{1F4F7}'} {ip.length}</span>}</div>
                 <StatusPill status={st} onSelect={v => upd({ statuses: { ...cur.statuses, [item]: v } })} />
                 {showNote && <ItemNote value={noteVal} onChange={v => upd({ itemNotes: { ...cur.itemNotes, [item]: v } })} />}
                 <PhotoRow photos={ip} onAdd={d => upd({ photos: { ...cur.photos, [item]: [...(cur.photos?.[item] || []), d] } })} onRemove={i => { const a = [...(cur.photos?.[item] || [])]; a.splice(i, 1); upd({ photos: { ...cur.photos, [item]: a } }); }} onTap={s => setLightbox(s)} /></div>); })}</div>}</div>); })}
@@ -355,8 +355,8 @@ export default function App() {
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {OVERALL_RATINGS.map(r => { const a = cur.overallRating === r; const rc = r === 'Excellent' ? '#22C55E' : r === 'Good' ? TEAL : r === 'Fair' ? '#F59E0B' : '#EF4444'; return (
             <button key={r} onClick={() => upd({ overallRating: a ? '' : r })} style={{ padding: '8px 16px', borderRadius: 20, border: `2px solid ${a ? rc : BORDER_GRAY}`, background: a ? rc + '15' : '#fff', color: a ? rc : MED_GRAY, fontSize: 12, fontWeight: a ? 700 : 500, cursor: 'pointer', ...F }}>{r}</button>); })}</div></div>
-      <button onClick={() => setView('pdf')} style={{ ...S.exportBtn, width: '100%', marginBottom: 10 }}>ðŸ“„ Preview & Print PDF</button>
-      <button onClick={() => setShowEmail(true)} style={{ ...S.emailBtn, width: '100%', marginBottom: 10 }}>âœ‰ Send to Customer</button>
+      <button onClick={() => setView('pdf')} style={{ ...S.exportBtn, width: '100%', marginBottom: 10 }}>{'\u{1F4C4}'} Preview & Print PDF</button>
+      <button onClick={() => setShowEmail(true)} style={{ ...S.emailBtn, width: '100%', marginBottom: 10 }}>{'\u2709'} Send to Customer</button>
       <button onClick={() => setView('summary')} style={{ ...S.secBtn, width: '100%', marginBottom: 20 }}>View Summary</button></div></div>);
 }
 
