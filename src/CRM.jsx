@@ -5,7 +5,7 @@ import { genId, getCompInfo, getCounts, getTotalPhotos } from './utils.js';
 
 const F = { fontFamily: "'DM Sans', sans-serif" };
 
-// â”€â”€ Client list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Client list -------------------------------------
 
 export function ClientList({ onSelectClient, onNewClient }) {
   const [clients, setClients] = useState([]);
@@ -32,7 +32,7 @@ export function ClientList({ onSelectClient, onNewClient }) {
 
       {!loading && filtered.length === 0 && (
         <div style={S.empty}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>ðŸ‘¤</div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>{'\u{1F464}'}</div>
           <div style={{ fontSize: 15, fontWeight: 600, color: NAVY, ...F }}>{search ? 'No clients match' : 'No clients yet'}</div>
           <div style={{ fontSize: 13, color: MED_GRAY, marginTop: 4, ...F }}>Tap "+ Add Client" to get started</div>
         </div>
@@ -50,7 +50,7 @@ export function ClientList({ onSelectClient, onNewClient }) {
                 {client.company && <div style={{ fontSize: 12, color: TEAL, fontWeight: 600, ...F }}>{client.company}</div>}
                 <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 4, ...F }}>
                   {client.email && <span>{client.email}</span>}
-                  {client.email && client.phone && <span> Â· </span>}
+                  {client.email && client.phone && <span> {'\u00B7'} </span>}
                   {client.phone && <span>{client.phone}</span>}
                 </div>
               </div>
@@ -65,7 +65,7 @@ export function ClientList({ onSelectClient, onNewClient }) {
   );
 }
 
-// â”€â”€ Client form (add/edit) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Client form (add/edit) --------------------------
 
 export function ClientForm({ clientId, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -129,7 +129,7 @@ export function ClientForm({ clientId, onSave, onCancel }) {
   );
 }
 
-// â”€â”€ Client detail (with properties & inspection history) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Client detail (with properties & inspection history) ------------
 
 export function ClientDetail({ clientId, onBack, onStartInspection, onOpenInspection }) {
   const [client, setClient] = useState(null);
@@ -183,8 +183,8 @@ export function ClientDetail({ clientId, onBack, onStartInspection, onOpenInspec
         <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', ...F }}>{client.first_name} {client.last_name}</div>
         {client.company && <div style={{ fontSize: 13, color: TEAL_MED, fontWeight: 600, marginTop: 2, ...F }}>{client.company}</div>}
         <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {client.email && <div style={{ fontSize: 12, color: TEAL_MED, ...F }}>âœ‰ {client.email}</div>}
-          {client.phone && <div style={{ fontSize: 12, color: TEAL_MED, ...F }}>ðŸ“± {client.phone}</div>}
+          {client.email && <div style={{ fontSize: 12, color: TEAL_MED, ...F }}>{'\u2709'} {client.email}</div>}
+          {client.phone && <div style={{ fontSize: 12, color: TEAL_MED, ...F }}>{'\u{1F4F1}'} {client.phone}</div>}
         </div>
         {client.notes && <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)', marginTop: 8, fontStyle: 'italic', ...F }}>{client.notes}</div>}
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -201,7 +201,7 @@ export function ClientDetail({ clientId, onBack, onStartInspection, onOpenInspec
 
       {properties.length === 0 && (
         <div style={S.empty}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>ðŸ </div>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>{'\u{1F3E0}'}</div>
           <div style={{ fontSize: 13, fontWeight: 600, color: NAVY, ...F }}>No properties yet</div>
           <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 4, ...F }}>Add a property to start tracking inspections</div>
         </div>
@@ -219,28 +219,28 @@ export function ClientDetail({ clientId, onBack, onStartInspection, onOpenInspec
                   {prop.unit_suite && <div style={{ fontSize: 12, color: MED_GRAY, ...F }}>Unit: {prop.unit_suite}</div>}
                   <div style={{ fontSize: 11, color: MED_GRAY, marginTop: 2, ...F }}>
                     {prop.city}, {prop.state} {prop.zip || ''}
-                    {prop.plan_tier && <span> Â· {prop.plan_tier} plan</span>}
+                    {prop.plan_tier && <span> {'\u00B7'} {prop.plan_tier} plan</span>}
                   </div>
                   {(prop.bedrooms || prop.bathrooms || prop.sqft) && (
                     <div style={{ fontSize: 11, color: MED_GRAY, marginTop: 2, ...F }}>
                       {prop.bedrooms && <span>{prop.bedrooms} bed</span>}
-                      {prop.bathrooms && <span> Â· {prop.bathrooms} bath</span>}
-                      {prop.sqft && <span> Â· {prop.sqft} sqft</span>}
+                      {prop.bathrooms && <span> {'\u00B7'} {prop.bathrooms} bath</span>}
+                      {prop.sqft && <span> {'\u00B7'} {prop.sqft} sqft</span>}
                     </div>
                   )}
                 </div>
-                <span style={{ color: TEAL_MED, fontSize: 18, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>â–¾</span>
+                <span style={{ color: TEAL_MED, fontSize: 18, transition: 'transform .2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>{'\u25BE'}</span>
               </div>
             </div>
 
             {expanded && (
               <div style={{ background: '#fff', borderRadius: '0 0 14px 14px', border: `1px solid ${BORDER_GRAY}`, borderTop: 'none', padding: 14, marginTop: -10 }}>
-                {prop.access_notes && <div style={{ fontSize: 12, color: MED_GRAY, marginBottom: 10, ...F }}>ðŸ”‘ {prop.access_notes}</div>}
+                {prop.access_notes && <div style={{ fontSize: 12, color: MED_GRAY, marginBottom: 10, ...F }}>{'\u{1F511}'} {prop.access_notes}</div>}
                 {prop.notes && <div style={{ fontSize: 12, color: MED_GRAY, marginBottom: 10, fontStyle: 'italic', ...F }}>{prop.notes}</div>}
 
                 <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                   <button onClick={(e) => { e.stopPropagation(); onStartInspection(client, prop); }} style={{ ...S.smallBtn, background: TEAL, color: '#fff' }}>
-                    ðŸ“‹ New inspection
+                    \u{1F4CB} New inspection
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); setEditingPropId(prop.id); }} style={{ ...S.smallBtn, background: LIGHT_GRAY, color: DARK_GRAY }}>
                     Edit
@@ -250,7 +250,7 @@ export function ClientDetail({ clientId, onBack, onStartInspection, onOpenInspec
                   </button>
                 </div>
 
-                {/* â”€â”€ Inspection history (tappable) â”€â”€ */}
+                {/* -- Inspection history (tappable) -- */}
                 <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 8, ...F }}>
                   Inspection history
                   {insps.length > 0 && <span style={{ fontWeight: 500, color: MED_GRAY }}> ({insps.length})</span>}
@@ -289,10 +289,10 @@ export function ClientDetail({ clientId, onBack, onStartInspection, onOpenInspec
                                 background: ratingColor + '15', color: ratingColor, ...F,
                               }}>{rating}</span>
                             )}
-                            {counts.good > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#22C55E', ...F }}>âœ“{counts.good}</span>}
+                            {counts.good > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#22C55E', ...F }}>{'\u2713'}{counts.good}</span>}
                             {counts.fair > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#F59E0B', ...F }}>~{counts.fair}</span>}
                             {counts.attention > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#EF4444', ...F }}>!{counts.attention}</span>}
-                            {photoCount > 0 && <span style={{ fontSize: 10, color: MED_GRAY, ...F }}>ðŸ“·{photoCount}</span>}
+                            {photoCount > 0 && <span style={{ fontSize: 10, color: MED_GRAY, ...F }}>{'\u{1F4F7}'}{photoCount}</span>}
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -303,7 +303,7 @@ export function ClientDetail({ clientId, onBack, onStartInspection, onOpenInspec
                           }}>
                             <span style={{ fontSize: 11, fontWeight: 800, color: pct === 100 ? '#22C55E' : TEAL, ...F }}>{pct}%</span>
                           </div>
-                          <span style={{ fontSize: 14, color: TEAL_MED }}>â€º</span>
+                          <span style={{ fontSize: 14, color: TEAL_MED }}>{'\u203A'}</span>
                         </div>
                       </div>
                     </div>
@@ -318,7 +318,7 @@ export function ClientDetail({ clientId, onBack, onStartInspection, onOpenInspec
   );
 }
 
-// â”€â”€ Property form (add/edit) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Property form (add/edit) ------------------------
 
 export function PropertyForm({ clientId, propertyId, onSave, onCancel }) {
   const [form, setForm] = useState({
@@ -426,7 +426,7 @@ export function PropertyForm({ clientId, propertyId, onSave, onCancel }) {
   );
 }
 
-// â”€â”€ Shared styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Shared styles -----------------------------------
 
 const S = {
   primaryBtn: { background: `linear-gradient(135deg,${TEAL},#1a9e8e)`, color: '#fff', border: 'none', borderRadius: 24, padding: '10px 22px', fontSize: 13, fontWeight: 700, cursor: 'pointer', ...F, boxShadow: `0 4px 14px ${TEAL}44` },
