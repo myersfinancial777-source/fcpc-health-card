@@ -169,14 +169,20 @@ export default function App() {
 
   useEffect(() => {
     if (!supabase) { setAuthState('admin'); loadInspections().then(d => { setInspections(d); setLoaded(true); }); initEmailJS(); return; }
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    if (!supabase.auth) { console.error('supabase.auth not available'); setAuthState('admin'); loadInspections().then(d => { setInspections(d); setLoaded(true); }); initEmailJS(); return; }
+    supabase.auth.getSession().then(function(resp) {
+      var session = resp && resp.data ? resp.data.session : null;
       if (session) { handleAuthSession(session.user.id); } else { setAuthState('unauthenticated'); }
+    }).catch(function(err) {
+      console.error('Auth getSession error:', err);
+      setAuthState('unauthenticated');
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    var authListener = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) { handleAuthSession(session.user.id); }
       else if (event === 'SIGNED_OUT') { setAuthState('unauthenticated'); setProfile(null); }
     });
-    return () => subscription.unsubscribe();
+    var subscription = authListener && authListener.data ? authListener.data.subscription : null;
+    return () => { if (subscription) subscription.unsubscribe(); };
   }, []);
 
   async function handleAuthSession(userId) {
