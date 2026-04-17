@@ -5,6 +5,9 @@ import { sendEmail, initEmailJS } from './email.js';
 import { compressImage, genId, todayStr, getCompInfo, getCounts, getTotalPhotos } from './utils.js';
 import { ClientList, ClientForm, ClientDetail } from './CRM.jsx';
 import logoUrl from '/logo.png?url';
+import { supabase } from './supabase.js';
+import { AuthScreen } from './Auth.jsx';
+import { CustomerPortal } from './CustomerPortal.jsx';
 
 const F = { fontFamily: "'DM Sans', sans-serif" };
 
@@ -160,7 +163,43 @@ export default function App() {
   const [crmView, setCrmView] = useState('list');
   const [selectedClientId, setSelectedClientId] = useState(null);
 
-  useEffect(() => { loadInspections().then(d => { setInspections(d); setLoaded(true); }); initEmailJS(); }, []);
+  // Auth state
+  const [authState, setAuthState] = useState('loading');
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    if (!supabase) { setAuthState('admin'); loadInspections().then(d => { setInspections(d); setLoaded(true); }); initEmailJS(); return; }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) { handleAuthSession(session.user.id); } else { setAuthState('unauthenticated'); }
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) { handleAuthSession(session.user.id); }
+      else if (event === 'SIGNED_OUT') { setAuthState('unauthenticated'); setProfile(null); }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function handleAuthSession(userId) {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (data) {
+      setProfile(data);
+      if (data.role === 'admin') {
+        setAuthState('admin');
+        loadInspections().then(d => { setInspections(d); setLoaded(true); });
+        initEmailJS();
+      } else {
+        setAuthState('customer');
+      }
+    } else {
+      setAuthState('unauthenticated');
+    }
+  }
+
+  async function handleSignOut() {
+    if (supabase) await supabase.auth.signOut();
+    setAuthState('unauthenticated');
+    setProfile(null);
+  }
 
   const cur = inspections.find(i => i.id === currentId) || null;
 
@@ -205,6 +244,18 @@ export default function App() {
     );
   }
 
+  // Auth guards
+  if (authState === 'loading') return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, ' + NAVY + ', #153060)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <img src={logoUrl} alt="Logo" style={{ height: 64, borderRadius: 8, marginBottom: 12 }} />
+        <div style={{ color: TEAL_MED, fontSize: 13, ...F }}>Loading...</div>
+      </div>
+    </div>
+  );
+  if (authState === 'unauthenticated') return <AuthScreen />;
+  if (authState === 'customer') return <CustomerPortal profile={profile} onSignOut={handleSignOut} />;
+
   if (view === 'pdf' && cur) return <PdfPreview inspection={cur} onClose={() => setView('summary')} />;
 
   /* -- LIST (with tabs) -- */
@@ -215,7 +266,10 @@ export default function App() {
           <img src={logoUrl} alt="Logo" style={{ height: 44, borderRadius: 6 }} />
           <div><div style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontFamily: "'Playfair Display', serif" }}>First Coast</div>
           <div style={{ fontSize: 11, color: TEAL_MED, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', ...F }}>Property Care</div></div></div>
-        <div style={{ fontSize: 10, color: TEAL_MED, fontStyle: 'italic', textAlign: 'center', marginTop: 4, ...F }}>"We Handle the Small Things Before They Become Big Problems."</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+          <div style={{ fontSize: 10, color: TEAL_MED, fontStyle: 'italic', ...F }}>"We Handle the Small Things..."</div>
+          {supabase && <button onClick={handleSignOut} style={{ background: 'rgba(255,255,255,.12)', border: 'none', borderRadius: 14, padding: '4px 12px', fontSize: 10, fontWeight: 600, color: TEAL_MED, cursor: 'pointer', ...F }}>Sign Out</button>}
+        </div>
       </div>
       <TabBar />
       <div style={S.body}>
