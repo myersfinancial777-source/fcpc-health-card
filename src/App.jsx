@@ -212,7 +212,10 @@ export default function App() {
   const saveTimer = useRef(null);
   function upd(u) {
     setInspections(p => {
-      const next = p.map(i => i.id === currentId ? { ...i, ...u } : i);
+      const cur = p.find(i => i.id === currentId);
+      if (!cur) return p;
+      const updates = typeof u === 'function' ? u(cur) : u;
+      const next = p.map(i => i.id === currentId ? { ...i, ...updates } : i);
       const updated = next.find(i => i.id === currentId);
       if (updated) {
         clearTimeout(saveTimer.current);
@@ -403,9 +406,9 @@ export default function App() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <div style={{ fontSize: 13, color: DARK_GRAY, fontWeight: 500, ...F, flex: 1 }}>{item}</div>
                   {ip.length > 0 && <span style={{ fontSize: 10, color: TEAL, fontWeight: 600, ...F }}>{'\u{1F4F7}'} {ip.length}</span>}</div>
-                <StatusPill status={st} onSelect={v => upd({ statuses: { ...cur.statuses, [item]: v } })} />
-                {showNote && <ItemNote value={noteVal} onChange={v => upd({ itemNotes: { ...cur.itemNotes, [item]: v } })} />}
-                <PhotoRow photos={ip} onAdd={d => upd({ photos: { ...cur.photos, [item]: [...(cur.photos?.[item] || []), d] } })} onRemove={i => { const a = [...(cur.photos?.[item] || [])]; a.splice(i, 1); upd({ photos: { ...cur.photos, [item]: a } }); }} onTap={s => setLightbox(s)} /></div>); })}</div>}</div>); })}
+                <StatusPill status={st} onSelect={v => upd(c => ({ statuses: { ...c.statuses, [item]: v } }))} />
+                {showNote && <ItemNote value={noteVal} onChange={v => upd(c => ({ itemNotes: { ...c.itemNotes, [item]: v } }))} />}
+                <PhotoRow photos={ip} onAdd={d => upd(c => ({ photos: { ...c.photos, [item]: [...(c.photos?.[item] || []), d] } }))} onRemove={i => upd(c => { const a = [...(c.photos?.[item] || [])]; a.splice(i, 1); return { photos: { ...c.photos, [item]: a } }; })} onTap={s => setLightbox(s)} /></div>); })}</div>}</div>); })}
 
       <div style={S.infoCard}>
         <div style={{ fontSize: 11, fontWeight: 700, color: TEAL, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Notes & Observations</div>
