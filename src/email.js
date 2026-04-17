@@ -1,5 +1,6 @@
 import emailjs from '@emailjs/browser';
 import { SECTIONS, STATUS_OPTIONS } from './constants.js';
+import { uploadPhotoForEmail } from './supabase.js';
 
 var SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 var TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
@@ -31,23 +32,6 @@ function statusLabel(key) {
   return match ? match.label : '\u2014';
 }
 
-function statusIcon(key) {
-  var match = STATUS_OPTIONS.find(function(o) { return o.key === key; });
-  return match ? match.icon : ' ';
-}
-
-function photoCount(insp, item) {
-  return (insp.photos && insp.photos[item]) ? insp.photos[item].length : 0;
-}
-
-function totalPhotos(insp) {
-  var count = 0;
-  Object.keys(insp.photos || {}).forEach(function(k) {
-    count += (insp.photos[k] || []).length;
-  });
-  return count;
-}
-
 function ratingColor(rating) {
   if (rating === 'Excellent') return '#22C55E';
   if (rating === 'Good') return '#1B8A8C';
@@ -61,7 +45,31 @@ function esc(text) {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export function buildEmailBody(insp) {
+async function uploadAllPhotos(insp) {
+  var photoUrls = {};
+  var promises = [];
+
+  SECTIONS.forEach(function(sec) {
+    sec.items.forEach(function(item) {
+      var pics = (insp.photos && insp.photos[item]) ? insp.photos[item] : [];
+      if (pics.length > 0) {
+        photoUrls[item] = [];
+        pics.forEach(function(dataUrl, idx) {
+          promises.push(
+            uploadPhotoForEmail(insp.id, item, idx, dataUrl).then(function(url) {
+              if (url) photoUrls[item].push(url);
+            })
+          );
+        });
+      }
+    });
+  });
+
+  await Promise.all(promises);
+  return photoUrls;
+}
+
+function buildEmailHtml(insp, photoUrls) {
   var ci = getCompInfo(insp);
   var counts = getCounts(insp);
   var addr = esc(insp.propertyAddress || 'Property');
@@ -71,7 +79,11 @@ export function buildEmailBody(insp) {
   var date = esc(insp.date || '');
   var rating = insp.overallRating || 'Not yet rated';
   var rc = ratingColor(rating);
-  var pc = totalPhotos(insp);
+
+  var totalPhotos = 0;
+  Object.keys(photoUrls).forEach(function(k) {
+    totalPhotos += photoUrls[k].length;
+  });
 
   var att = [];
   SECTIONS.forEach(function(sec) {
@@ -88,7 +100,6 @@ export function buildEmailBody(insp) {
 
   var h = '';
 
-  // Email wrapper
   h += '<div style="background-color:#F0F4F5;padding:20px 0;font-family:Arial,Helvetica,sans-serif;">';
   h += '<div style="max-width:600px;margin:0 auto;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">';
 
@@ -97,8 +108,6 @@ export function buildEmailBody(insp) {
   h += '<div style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:0.5px;">First Coast Property Care</div>';
   h += '<div style="font-size:11px;color:#A8DCD9;letter-spacing:3px;text-transform:uppercase;margin-top:4px;">Jacksonville &amp; St. Augustine, FL</div>';
   h += '</div>';
-
-  // Teal accent bar
   h += '<div style="height:4px;background:linear-gradient(90deg,#1B8A8C,#A8DCD9);"></div>';
 
   // Title
@@ -107,7 +116,7 @@ export function buildEmailBody(insp) {
   h += '<div style="font-size:12px;color:#666666;margin-top:4px;">Preventative Maintenance Inspection Report</div>';
   h += '</div>';
 
-  // Property details card
+  // Property details
   h += '<div style="margin:0 24px 20px;background-color:#F0F4F5;border-radius:10px;padding:18px 20px;">';
   h += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
   h += '<tr><td style="color:#1B8A8C;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:2px;">Property Address</td>';
@@ -120,35 +129,36 @@ export function buildEmailBody(insp) {
   h += '<td style="color:#0B2545;font-weight:600;">' + plan + '</td></tr>';
   h += '</table></div>';
 
-  // Status summary boxes
+  // Status summary
   h += '<div style="margin:0 24px 20px;">';
   h += '<table style="width:100%;border-collapse:separate;border-spacing:8px 0;">';
   h += '<tr>';
-  h += '<td style="background-color:#22C55E15;border:1px solid #22C55E33;border-radius:8px;padding:12px;text-align:center;width:25%;">';
+  h += '<td style="background-color:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;text-align:center;width:25%;">';
   h += '<div style="font-size:22px;font-weight:800;color:#22C55E;">' + counts.good + '</div>';
   h += '<div style="font-size:10px;font-weight:600;color:#22C55E;text-transform:uppercase;">Good</div></td>';
-  h += '<td style="background-color:#F59E0B15;border:1px solid #F59E0B33;border-radius:8px;padding:12px;text-align:center;width:25%;">';
+  h += '<td style="background-color:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;text-align:center;width:25%;">';
   h += '<div style="font-size:22px;font-weight:800;color:#F59E0B;">' + counts.fair + '</div>';
   h += '<div style="font-size:10px;font-weight:600;color:#F59E0B;text-transform:uppercase;">Fair</div></td>';
-  h += '<td style="background-color:#EF444415;border:1px solid #EF444433;border-radius:8px;padding:12px;text-align:center;width:25%;">';
+  h += '<td style="background-color:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;text-align:center;width:25%;">';
   h += '<div style="font-size:22px;font-weight:800;color:#EF4444;">' + counts.attention + '</div>';
   h += '<div style="font-size:10px;font-weight:600;color:#EF4444;text-transform:uppercase;">Attention</div></td>';
-  h += '<td style="background-color:#9CA3AF15;border:1px solid #9CA3AF33;border-radius:8px;padding:12px;text-align:center;width:25%;">';
+  h += '<td style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;text-align:center;width:25%;">';
   h += '<div style="font-size:22px;font-weight:800;color:#9CA3AF;">' + counts.na + '</div>';
   h += '<div style="font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;">N/A</div></td>';
   h += '</tr></table></div>';
 
-  // Completion bar
+  // Progress bar
   h += '<div style="margin:0 24px 20px;background-color:#F0F4F5;border-radius:8px;padding:14px 18px;">';
-  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
-  h += '<span style="font-size:12px;font-weight:600;color:#0B2545;">Inspection Progress</span>';
-  h += '<span style="font-size:12px;font-weight:700;color:' + (ci.pct === 100 ? '#22C55E' : '#1B8A8C') + ';">' + ci.done + '/' + ci.total + ' (' + ci.pct + '%)</span></div>';
-  h += '<div style="height:8px;background-color:#D0D8DA;border-radius:4px;overflow:hidden;">';
+  h += '<table style="width:100%;"><tr>';
+  h += '<td style="font-size:12px;font-weight:600;color:#0B2545;">Inspection Progress</td>';
+  h += '<td style="font-size:12px;font-weight:700;color:' + (ci.pct === 100 ? '#22C55E' : '#1B8A8C') + ';text-align:right;">' + ci.done + '/' + ci.total + ' (' + ci.pct + '%)</td>';
+  h += '</tr></table>';
+  h += '<div style="height:8px;background-color:#D0D8DA;border-radius:4px;overflow:hidden;margin-top:6px;">';
   h += '<div style="width:' + ci.pct + '%;height:100%;background-color:' + (ci.pct === 100 ? '#22C55E' : '#1B8A8C') + ';border-radius:4px;"></div></div></div>';
 
   // Overall rating
   if (insp.overallRating) {
-    h += '<div style="margin:0 24px 20px;background-color:' + rc + '12;border:2px solid ' + rc + '33;border-radius:10px;padding:14px 18px;text-align:center;">';
+    h += '<div style="margin:0 24px 20px;border:2px solid ' + rc + ';border-radius:10px;padding:14px 18px;text-align:center;">';
     h += '<div style="font-size:11px;font-weight:700;color:#0B2545;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Overall Property Rating</div>';
     h += '<div style="font-size:20px;font-weight:800;color:' + rc + ';">' + esc(rating) + '</div></div>';
   }
@@ -180,21 +190,32 @@ export function buildEmailBody(insp) {
       var s = insp.statuses[item];
       var sc = statusColor(s);
       var sl = statusLabel(s);
-      var pc = photoCount(insp, item);
       var note = (insp.itemNotes && insp.itemNotes[item]) || '';
+      var urls = photoUrls[item] || [];
       var bg = idx % 2 === 0 ? '#ffffff' : '#F0F4F5';
 
       h += '<div style="padding:8px 14px;background-color:' + bg + ';font-size:12px;">';
-      h += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-      h += '<span style="color:#333333;">' + esc(item) + '</span>';
-      h += '<span style="display:inline-block;font-weight:700;font-size:10px;padding:2px 10px;border-radius:10px;background-color:' + sc + '18;color:' + sc + ';border:1px solid ' + sc + '33;min-width:60px;text-align:center;">';
-      h += sl + '</span></div>';
-      if (pc > 0) {
-        h += '<div style="font-size:10px;color:#1B8A8C;margin-top:2px;">\u{1F4F7} ' + pc + ' photo' + (pc > 1 ? 's' : '') + ' (see PDF report)</div>';
-      }
+
+      // Item name and status
+      h += '<table style="width:100%;"><tr>';
+      h += '<td style="color:#333333;">' + esc(item) + '</td>';
+      h += '<td style="text-align:right;"><span style="font-weight:700;font-size:10px;padding:2px 10px;border-radius:10px;background-color:' + sc + ';color:#ffffff;">';
+      h += sl + '</span></td></tr></table>';
+
+      // Note
       if (note) {
-        h += '<div style="font-size:11px;color:#92400E;font-style:italic;margin-top:4px;padding-left:8px;background-color:#FFF9F0;padding:4px 8px;border-radius:4px;">Note: ' + esc(note) + '</div>';
+        h += '<div style="font-size:11px;color:#92400E;font-style:italic;margin-top:6px;background-color:#FFF9F0;padding:6px 10px;border-radius:4px;border-left:3px solid #F59E0B;">Note: ' + esc(note) + '</div>';
       }
+
+      // Photos
+      if (urls.length > 0) {
+        h += '<div style="margin-top:8px;">';
+        urls.forEach(function(url) {
+          h += '<img src="' + url + '" alt="' + esc(item) + '" style="width:180px;height:135px;object-fit:cover;border-radius:6px;border:1px solid #D0D8DA;margin:0 6px 6px 0;display:inline-block;" />';
+        });
+        h += '</div>';
+      }
+
       h += '</div>';
     });
 
@@ -210,11 +231,10 @@ export function buildEmailBody(insp) {
     h += '</div>';
   }
 
-  // Photo notice
-  if (pc > 0) {
-    h += '<div style="margin:0 24px 20px;background-color:#E0F5F5;border:1px solid #1B8A8C44;border-radius:10px;padding:14px 18px;text-align:center;">';
-    h += '<div style="font-size:12px;font-weight:600;color:#0B2545;">\u{1F4F7} ' + pc + ' photos captured during this inspection</div>';
-    h += '<div style="font-size:11px;color:#666666;margin-top:4px;">Full photo documentation is available in the PDF report</div>';
+  // Photo summary
+  if (totalPhotos > 0) {
+    h += '<div style="margin:0 24px 20px;background-color:#E0F5F5;border:1px solid #1B8A8C;border-radius:10px;padding:14px 18px;text-align:center;">';
+    h += '<div style="font-size:13px;font-weight:700;color:#0B2545;">' + totalPhotos + ' photos included in this report</div>';
     h += '</div>';
   }
 
@@ -231,13 +251,27 @@ export function buildEmailBody(insp) {
   return h;
 }
 
+export function buildEmailBody(insp) {
+  return buildEmailHtml(insp, {});
+}
+
 export async function sendEmail(toEmail, insp) {
   if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
     return { ok: false, msg: 'EmailJS not configured. Check environment variables.' };
   }
 
   var addr = insp.propertyAddress || 'Property';
-  var body = buildEmailBody(insp);
+
+  // Upload photos to Supabase Storage and get public URLs
+  var photoUrls = {};
+  try {
+    photoUrls = await uploadAllPhotos(insp);
+  } catch (err) {
+    console.error('Photo upload error:', err);
+    // Continue without photos if upload fails
+  }
+
+  var body = buildEmailHtml(insp, photoUrls);
 
   try {
     var result = await emailjs.send(SERVICE_ID, TEMPLATE_ID, {
