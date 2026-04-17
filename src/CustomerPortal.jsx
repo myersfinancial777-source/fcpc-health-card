@@ -376,4 +376,85 @@ export function CustomerPortal(props) {
                       </div>
                     )}
                   </div>
-                  <d
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ background: TEAL_LIGHT, borderRadius: 20, padding: '4px 10px', fontSize: 11, fontWeight: 700, color: TEAL, ...F }}>
+                      {propInsps.length} {propInsps.length === 1 ? 'visit' : 'visits'}
+                    </div>
+                    <span style={{ color: TEAL_MED, fontSize: 18, transition: 'transform .2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>{'\u25BE'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {isExpanded && (
+                <div style={{ background: '#fff', borderRadius: '0 0 14px 14px', border: '1px solid ' + BORDER_GRAY, borderTop: 'none', padding: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 10, ...F }}>
+                    Inspection History
+                    <span style={{ fontWeight: 500, color: MED_GRAY }}> ({propInsps.length})</span>
+                  </div>
+
+                  {propInsps.length === 0 && (
+                    <div style={{ fontSize: 12, color: MED_GRAY, ...F }}>No inspections yet for this property</div>
+                  )}
+
+                  {propInsps.map(function(ins) {
+                    var ci2 = getCompInfo(ins);
+                    var counts2 = getCounts(ins);
+                    var r = ins.overall_rating || '';
+                    var r2c = r === 'Excellent' ? '#22C55E' : r === 'Good' ? TEAL : r === 'Fair' ? '#F59E0B' : r === 'Needs Attention' ? '#EF4444' : MED_GRAY;
+
+                    return (
+                      <div key={ins.id}
+                        onClick={function() { openInspection(ins.id); }}
+                        style={{ padding: '10px 12px', marginBottom: 6, background: LIGHT_GRAY, borderRadius: 10, border: '1px solid ' + BORDER_GRAY, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: DARK_GRAY, ...F }}>{ins.date || 'No date'}</div>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+                              {r && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 8, background: r2c + '15', color: r2c, ...F }}>{r}</span>}
+                              {counts2.good > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#22C55E', ...F }}>{'\u2713'}{counts2.good}</span>}
+                              {counts2.fair > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#F59E0B', ...F }}>~{counts2.fair}</span>}
+                              {counts2.attention > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#EF4444', ...F }}>!{counts2.attention}</span>}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: '50%', border: '2.5px solid ' + (ci2.pct === 100 ? '#22C55E' : TEAL), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: ci2.pct === 100 ? '#22C55E' : TEAL, ...F }}>{ci2.pct}%</span>
+                            </div>
+                            <span style={{ fontSize: 14, color: TEAL_MED }}>{'\u203A'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Contact footer */}
+        <div style={{ marginTop: 24, background: 'linear-gradient(135deg, ' + NAVY + ', ' + NAVY + 'dd)', borderRadius: 14, padding: 18, textAlign: 'center' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', ...F }}>Need Assistance?</div>
+          <div style={{ fontSize: 12, color: TEAL_MED, marginTop: 6, ...F }}>(904) 754-3614</div>
+          <div style={{ fontSize: 11, color: TEAL_MED, marginTop: 2, ...F }}>firstcoastpropertycare@gmail.com</div>
+        </div>
+
+        <div style={{ height: 20 }} />
+      </div>
+
+      {detailLoading && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: '24px 32px', textAlign: 'center', ...F }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: NAVY }}>Loading inspection...</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+var S = {
+  app: { maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: '#F5F7F8', fontFamily: "'DM Sans', sans-serif" },
+  body: { padding: 16 },
+  empty: { textAlign: 'center', padding: '32px 20px', background: '#fff', borderRadius: 16, border: '1px dashed ' + BORDER_GRAY, marginBottom: 12 },
+};
