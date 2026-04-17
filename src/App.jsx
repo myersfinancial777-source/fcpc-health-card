@@ -82,13 +82,13 @@ function EmailModal({ inspection, onClose }) {
     <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 480, padding: '20px 20px 32px', boxShadow: '0 -8px 30px rgba(0,0,0,.15)' }}>
       <div style={{ width: 36, height: 4, borderRadius: 2, background: BORDER_GRAY, margin: '0 auto 16px' }} />
       <div style={{ fontSize: 16, fontWeight: 700, color: NAVY, marginBottom: 4, ...F }}>Send Report to Customer</div>
-      <div style={{ fontSize: 12, color: MED_GRAY, marginBottom: 16, ...F, lineHeight: 1.5 }}>Sends a detailed inspection report to the customer's email.</div>
+      <div style={{ fontSize: 12, color: MED_GRAY, marginBottom: 16, ...F, lineHeight: 1.5 }}>Sends a branded inspection report with photos to the customer.</div>
       <input value={email} onChange={e => { setEmail(e.target.value); if (status === 'error') setStatus('idle'); }} placeholder="customer@email.com" type="email"
         style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: `2px solid ${status === 'error' ? '#EF4444' : email ? TEAL : BORDER_GRAY}`, fontSize: 14, ...F, outline: 'none', boxSizing: 'border-box', marginBottom: 8, background: LIGHT_GRAY }} />
-      {msg && <div style={{ fontSize: 12, padding: '8px 12px', borderRadius: 8, marginBottom: 8, ...F, fontWeight: 600, background: status === 'sent' ? '#22C55E15' : '#EF444415', color: status === 'sent' ? '#22C55E' : '#EF4444' }}>{status === 'sent' ? '- ' : '- '}{msg}</div>}
+      {msg && <div style={{ fontSize: 12, padding: '8px 12px', borderRadius: 8, marginBottom: 8, ...F, fontWeight: 600, background: status === 'sent' ? '#22C55E15' : '#EF444415', color: status === 'sent' ? '#22C55E' : '#EF4444' }}>{status === 'sent' ? '\u2713 ' : '\u2717 '}{msg}</div>}
       <button onClick={handleSend} disabled={status === 'sending' || status === 'sent'}
         style={{ width: '100%', background: status === 'sent' ? '#22C55E' : `linear-gradient(135deg,${TEAL},#1a9e8e)`, color: '#fff', border: 'none', borderRadius: 14, padding: '14px', fontSize: 14, fontWeight: 700, cursor: status === 'sending' ? 'wait' : 'pointer', ...F, boxShadow: `0 4px 14px ${TEAL}44`, opacity: status === 'sending' ? .7 : 1, marginBottom: 10 }}>
-        {status === 'sending' ? 'Sending...' : status === 'sent' ? '- Sent!' : '- Send Email'}</button>
+        {status === 'sending' ? 'Uploading photos & sending...' : status === 'sent' ? '\u2713 Sent!' : '\u2709 Send Email'}</button>
       <button onClick={onClose} style={{ width: '100%', background: 'transparent', border: `2px solid ${BORDER_GRAY}`, borderRadius: 14, padding: '12px', fontSize: 13, fontWeight: 600, color: MED_GRAY, cursor: 'pointer', ...F }}>Cancel</button>
     </div></div>);
 }
