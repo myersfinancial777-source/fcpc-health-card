@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NAVY, TEAL, TEAL_LIGHT, TEAL_MED, DARK_GRAY, MED_GRAY, LIGHT_GRAY, BORDER_GRAY, STATUS_OPTIONS, SECTIONS, PLAN_TIERS, OVERALL_RATINGS } from './constants.js';
 import { loadInspections, saveInspection, deleteInspection as dbDelete } from './supabase.js';
 import { sendEmail, initEmailJS } from './email.js';
@@ -49,7 +49,7 @@ function OverallProgress({ statuses }) {
 
 function PhotoRow({ photos, onAdd, onRemove, onTap }) {
   const camRef = useRef(null), fileRef = useRef(null);
-  const proc = useCallback(async e => { for (const f of Array.from(e.target.files || [])) { const c = await compressImage(f); if (c) onAdd(c); } e.target.value = ''; }, [onAdd]);
+  async function proc(e) { for (const f of Array.from(e.target.files || [])) { const c = await compressImage(f); if (c) onAdd(c); } e.target.value = ''; }
   return (<div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8, alignItems: 'center' }}>
     {photos.map((src, i) => (<div key={i} style={{ position: 'relative', width: 56, height: 56, borderRadius: 8, overflow: 'hidden', border: `1px solid ${BORDER_GRAY}`, flexShrink: 0 }}>
       <img src={src} alt="" onClick={() => onTap?.(src)} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} />
@@ -275,10 +275,8 @@ export default function App() {
           <img src={logoUrl} alt="Logo" style={{ height: 44, borderRadius: 6 }} />
           <div><div style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontFamily: "'Playfair Display', serif" }}>First Coast</div>
           <div style={{ fontSize: 11, color: TEAL_MED, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', ...F }}>Property Care</div></div></div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-          <div style={{ fontSize: 10, color: TEAL_MED, fontStyle: 'italic', ...F }}>"We Handle the Small Things..."</div>
-          {supabase && <button onClick={handleSignOut} style={{ background: 'rgba(255,255,255,.12)', border: 'none', borderRadius: 14, padding: '4px 12px', fontSize: 10, fontWeight: 600, color: TEAL_MED, cursor: 'pointer', ...F }}>Sign Out</button>}
-        </div>
+        <div style={{ fontSize: 10, color: TEAL_MED, fontStyle: 'italic', textAlign: 'center', marginTop: 4, ...F }}>"We Find Problems Before Your Guests Do."</div>
+        {supabase && <div style={{ textAlign: 'center', marginTop: 8 }}><button onClick={handleSignOut} style={{ background: 'rgba(255,255,255,.12)', border: 'none', borderRadius: 14, padding: '4px 12px', fontSize: 10, fontWeight: 600, color: TEAL_MED, cursor: 'pointer', ...F }}>Sign Out</button></div>}
       </div>
       <TabBar />
       <div style={S.body}>
