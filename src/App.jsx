@@ -191,7 +191,9 @@ export default function App() {
       setProfile(data);
       if (data.role === 'admin') {
         setAuthState('admin');
-        loadInspections().then(d => { setInspections(d); setLoaded(true); });
+        if (!inspRef.current || inspRef.current.length === 0) {
+          loadInspections().then(d => { setInspections(d); setLoaded(true); });
+        }
         initEmailJS();
       } else {
         setAuthState('customer');
@@ -210,20 +212,35 @@ export default function App() {
   const cur = inspections.find(i => i.id === currentId) || null;
 
   const saveTimer = useRef(null);
+  const inspRef = useRef(inspections);
+  inspRef.current = inspections;
+
   function upd(u) {
     setInspections(p => {
-      const cur = p.find(i => i.id === currentId);
-      if (!cur) return p;
-      const updates = typeof u === 'function' ? u(cur) : u;
-      const next = p.map(i => i.id === currentId ? { ...i, ...updates } : i);
-      const updated = next.find(i => i.id === currentId);
-      if (updated) {
-        clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => { setSaving(true); saveInspection(updated).then(() => setSaving(false)); }, 1000);
-      }
-      return next;
+      const c = p.find(i => i.id === currentId);
+      if (!c) return p;
+      const updates = typeof u === 'function' ? u(c) : u;
+      return p.map(i => i.id === currentId ? { ...i, ...updates } : i);
     });
   }
+
+  // Auto-save: debounce saves whenever inspections change
+  const prevInspsRef = useRef(null);
+  useEffect(() => {
+    if (!currentId) return;
+    const cur = inspections.find(i => i.id === currentId);
+    if (!cur) return;
+    // Skip the initial load
+    if (prevInspsRef.current === null) { prevInspsRef.current = inspections; return; }
+    if (prevInspsRef.current === inspections) return;
+    prevInspsRef.current = inspections;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      const latest = inspRef.current.find(i => i.id === currentId);
+      if (latest) { setSaving(true); saveInspection(latest).then(() => setSaving(false)); }
+    }, 1000);
+    return () => clearTimeout(saveTimer.current);
+  }, [inspections, currentId]);
 
   function startNew(client, property) {
     const f = createBlank(client, property);
