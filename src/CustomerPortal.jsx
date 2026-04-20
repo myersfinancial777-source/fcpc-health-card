@@ -392,4 +392,340 @@ export function CustomerPortal(props) {
                   background: portalTab === t.key ? TEAL : '#fff', color: portalTab === t.key ? '#fff' : MED_GRAY,
                   fontSize: 12, fontWeight: 700, cursor: 'pointer', ...F }}>
                 {t.label}
-                {t.key === 'billing' && invoices.filter(function(i) { return i.status === 'sent'; }).length > 0 
+                {t.key === 'billing' && invoices.filter(function(i) { return i.status === 'sent'; }).length > 0 && (
+                  <span style={{ marginLeft: 4, background: '#EF4444', color: '#fff', borderRadius: 10, padding: '1px 6px', fontSize: 9 }}>
+                    {invoices.filter(function(i) { return i.status === 'sent'; }).length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ---- Billing Tab ---- */}
+        {portalTab === 'billing' && (
+          <div>
+            {/* Pending Quotes */}
+            {quotes.filter(function(q) { return q.status === 'sent'; }).length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: NAVY, marginBottom: 8, ...F }}>Quotes Awaiting Approval</div>
+                {quotes.filter(function(q) { return q.status === 'sent'; }).map(function(q) {
+                  var qItems = q.quote_items || [];
+                  return (
+                    <div key={q.id} style={{ background: '#fff', borderRadius: 14, padding: 16, marginBottom: 10, border: '1px solid ' + BORDER_GRAY, boxShadow: '0 2px 8px rgba(0,0,0,.04)' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: NAVY, ...F }}>{q.title}</div>
+                      {q.description && <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 4, ...F }}>{q.description}</div>}
+                      {qItems.length > 0 && (
+                        <div style={{ marginTop: 10, borderTop: '1px solid ' + BORDER_GRAY + '44', paddingTop: 8 }}>
+                          {qItems.map(function(item) {
+                            return (
+                              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', ...F }}>
+                                <span style={{ color: DARK_GRAY }}>{item.description}{item.quantity > 1 ? ' x' + item.quantity : ''}</span>
+                                <span style={{ fontWeight: 700, color: NAVY }}>${Number(item.total || 0).toFixed(2)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '2px solid ' + NAVY }}>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: NAVY, ...F }}>Total: ${Number(q.total_amount || 0).toFixed(2)}</div>
+                        {q.valid_until && <div style={{ fontSize: 10, color: MED_GRAY, ...F }}>Valid until {q.valid_until}</div>}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                        <button onClick={function() { approveQuote(q.id); }} style={{ flex: 1, padding: '12px', borderRadius: 10, border: 'none', background: '#22C55E', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', ...F }}>Approve</button>
+                        <button onClick={function() { declineQuote(q.id); }} style={{ flex: 1, padding: '12px', borderRadius: 10, border: '2px solid #EF4444', background: '#fff', color: '#EF4444', fontSize: 13, fontWeight: 700, cursor: 'pointer', ...F }}>Decline</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Invoices */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: NAVY, marginBottom: 8, ...F }}>Invoices</div>
+              {invoices.length === 0 && <div style={{ fontSize: 12, color: MED_GRAY, ...F }}>No invoices yet</div>}
+              {invoices.map(function(inv) {
+                var sc = STATUS_COLORS[inv.status] || MED_GRAY;
+                var invItems = inv.invoice_items || [];
+                return (
+                  <div key={inv.id} style={{ background: '#fff', borderRadius: 14, padding: 16, marginBottom: 10, border: '1px solid ' + BORDER_GRAY, boxShadow: '0 2px 8px rgba(0,0,0,.04)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: NAVY, ...F }}>{inv.invoice_number || 'Invoice'} - {inv.title}</div>
+                        {inv.due_date && <div style={{ fontSize: 11, color: MED_GRAY, marginTop: 2, ...F }}>Due: {inv.due_date}</div>}
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 10px', borderRadius: 10, background: sc + '18', color: sc, textTransform: 'uppercase', ...F }}>{inv.status}</span>
+                    </div>
+                    {invItems.length > 0 && (
+                      <div style={{ marginTop: 10, borderTop: '1px solid ' + BORDER_GRAY + '44', paddingTop: 8 }}>
+                        {invItems.map(function(item) {
+                          return (
+                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', ...F }}>
+                              <span style={{ color: DARK_GRAY }}>{item.description}{item.quantity > 1 ? ' x' + item.quantity : ''}</span>
+                              <span style={{ fontWeight: 700, color: NAVY }}>${Number(item.total || 0).toFixed(2)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '2px solid ' + NAVY }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: inv.status === 'paid' ? '#22C55E' : NAVY, ...F }}>${Number(inv.total_amount || 0).toFixed(2)}</div>
+                      {inv.paid_at && <div style={{ fontSize: 11, color: '#22C55E', fontWeight: 600, ...F }}>{'\u2713'} Paid {new Date(inv.paid_at).toLocaleDateString()}</div>}
+                    </div>
+                    {inv.status === 'sent' && (
+                      <button onClick={function() { payInvoice(inv.id); }} style={{ width: '100%', marginTop: 12, padding: '14px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, ' + TEAL + ', #1a9e8e)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', ...F, boxShadow: '0 4px 14px ' + TEAL + '44' }}>
+                        Pay Now
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Past quotes */}
+            {quotes.filter(function(q) { return q.status !== 'sent'; }).length > 0 && (
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: NAVY, marginBottom: 8, ...F }}>Past Quotes</div>
+                {quotes.filter(function(q) { return q.status !== 'sent'; }).map(function(q) {
+                  var qsc = STATUS_COLORS[q.status] || MED_GRAY;
+                  return (
+                    <div key={q.id} style={{ background: '#fff', borderRadius: 14, padding: '12px 16px', marginBottom: 8, border: '1px solid ' + BORDER_GRAY }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: NAVY, ...F }}>{q.title}</div>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 10px', borderRadius: 10, background: qsc + '18', color: qsc, textTransform: 'uppercase', ...F }}>{q.status}</span>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: TEAL, marginTop: 4, ...F }}>${Number(q.total_amount || 0).toFixed(2)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ---- Work Requests Tab ---- */}
+        {portalTab === 'requests' && (
+          <div>
+            {!wrForm && (
+              <div>
+                <button onClick={function() { setWrForm({ title: '', description: '', property_id: '', urgency: 'normal' }); }}
+                  style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, ' + TEAL + ', #1a9e8e)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', ...F, boxShadow: '0 4px 14px ' + TEAL + '44', marginBottom: 16 }}>
+                  + Request New Work
+                </button>
+
+                {workRequests.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '32px 20px', background: '#fff', borderRadius: 16, border: '1px dashed ' + BORDER_GRAY }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: NAVY, ...F }}>No work requests yet</div>
+                    <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 4, ...F }}>Tap above to submit a request</div>
+                  </div>
+                )}
+
+                {workRequests.map(function(wr) {
+                  var wrsc = STATUS_COLORS[wr.status] || MED_GRAY;
+                  return (
+                    <div key={wr.id} style={{ background: '#fff', borderRadius: 14, padding: 16, marginBottom: 10, border: '1px solid ' + BORDER_GRAY }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: NAVY, ...F }}>{wr.title}</div>
+                          {wr.properties && <div style={{ fontSize: 11, color: MED_GRAY, marginTop: 2, ...F }}>{wr.properties.address}</div>}
+                          {wr.description && <div style={{ fontSize: 12, color: DARK_GRAY, marginTop: 6, lineHeight: 1.5, ...F }}>{wr.description}</div>}
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 10px', borderRadius: 10, background: wrsc + '18', color: wrsc, textTransform: 'uppercase', ...F }}>{wr.status}</span>
+                      </div>
+                      <div style={{ fontSize: 10, color: MED_GRAY, marginTop: 8, ...F }}>{new Date(wr.created_at).toLocaleDateString()}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {wrForm && (
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: NAVY, marginBottom: 16, ...F }}>New Work Request</div>
+                <div style={{ background: '#fff', borderRadius: 14, padding: 16, marginBottom: 12, border: '1px solid ' + BORDER_GRAY }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: "'DM Sans', sans-serif" }}>Title *</div>
+                  <input style={S2.input} placeholder="What do you need?" value={wrForm.title} onChange={function(e) { setWrForm(Object.assign({}, wrForm, { title: e.target.value })); }} />
+
+                  {properties.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: "'DM Sans', sans-serif" }}>Property</div>
+                      <select style={S2.input} value={wrForm.property_id} onChange={function(e) { setWrForm(Object.assign({}, wrForm, { property_id: e.target.value })); }}>
+                        <option value="">Select property...</option>
+                        {properties.map(function(p) { return <option key={p.id} value={p.id}>{p.address}</option>; })}
+                      </select>
+                    </div>
+                  )}
+
+                  <div style={{ fontSize: 11, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: "'DM Sans', sans-serif" }}>Description</div>
+                  <textarea style={Object.assign({}, S2.input, { minHeight: 80, resize: 'vertical' })} placeholder="Describe what you need done..." value={wrForm.description} onChange={function(e) { setWrForm(Object.assign({}, wrForm, { description: e.target.value })); }} />
+
+                  <div style={{ fontSize: 11, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: "'DM Sans', sans-serif" }}>Urgency</div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {['low', 'normal', 'high', 'emergency'].map(function(u) {
+                      var uc = u === 'emergency' ? '#EF4444' : u === 'high' ? '#F59E0B' : u === 'normal' ? TEAL : '#9CA3AF';
+                      return (
+                        <button key={u} onClick={function() { setWrForm(Object.assign({}, wrForm, { urgency: u })); }}
+                          style={{ flex: 1, padding: '8px', borderRadius: 10, border: wrForm.urgency === u ? '2px solid ' + uc : '1px solid ' + BORDER_GRAY,
+                            background: wrForm.urgency === u ? uc + '15' : '#fff', color: wrForm.urgency === u ? uc : MED_GRAY,
+                            fontSize: 11, fontWeight: 700, cursor: 'pointer', textTransform: 'capitalize', fontFamily: "'DM Sans', sans-serif" }}>
+                          {u}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button onClick={function() { if (wrForm.title.trim()) submitWorkRequest(wrForm); }}
+                  style={{ width: '100%', padding: '14px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, ' + TEAL + ', #1a9e8e)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", marginBottom: 8 }}>
+                  Submit Request
+                </button>
+                <button onClick={function() { setWrForm(null); }}
+                  style={{ width: '100%', padding: '12px', borderRadius: 12, border: '2px solid ' + TEAL, background: '#fff', color: TEAL, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ---- Inspections Tab ---- */}
+        {portalTab === 'inspections' && <>
+
+        {/* Summary cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+          <div style={{ background: '#fff', border: '1px solid ' + BORDER_GRAY, borderRadius: 12, padding: 14, textAlign: 'center' }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: TEAL, ...F }}>{properties.length}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: MED_GRAY, textTransform: 'uppercase', ...F }}>{properties.length === 1 ? 'Property' : 'Properties'}</div>
+          </div>
+          <div style={{ background: '#fff', border: '1px solid ' + BORDER_GRAY, borderRadius: 12, padding: 14, textAlign: 'center' }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: NAVY, ...F }}>{inspections.length}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: MED_GRAY, textTransform: 'uppercase', ...F }}>{inspections.length === 1 ? 'Inspection' : 'Inspections'}</div>
+          </div>
+        </div>
+
+        {/* Properties */}
+        <div style={{ fontSize: 15, fontWeight: 700, color: NAVY, marginBottom: 12, ...F }}>Your Properties</div>
+
+        {properties.length === 0 && (
+          <div style={S.empty}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>{'\u{1F3E0}'}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: NAVY, ...F }}>No properties yet</div>
+            <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 4, ...F }}>Contact us to get started with inspections</div>
+          </div>
+        )}
+
+        {properties.map(function(prop) {
+          var isExpanded = expandedProp === prop.id;
+          var propInsps = inspections.filter(function(i) { return i.property_id === prop.id; });
+          var latestInsp = propInsps[0];
+          var latestRating = latestInsp ? (latestInsp.overall_rating || '') : '';
+          var latestRc = latestRating === 'Excellent' ? '#22C55E' : latestRating === 'Good' ? TEAL : latestRating === 'Fair' ? '#F59E0B' : latestRating === 'Needs Attention' ? '#EF4444' : MED_GRAY;
+
+          return (
+            <div key={prop.id} style={{ marginBottom: 10 }}>
+              <div onClick={function() { setExpandedProp(isExpanded ? null : prop.id); }}
+                style={{ background: '#fff', borderRadius: isExpanded ? '14px 14px 0 0' : 14, padding: '14px 16px', border: '1px solid ' + BORDER_GRAY, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.04)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: NAVY, ...F }}>{prop.address}</div>
+                    {prop.unit_suite && <div style={{ fontSize: 12, color: MED_GRAY, ...F }}>Unit: {prop.unit_suite}</div>}
+                    <div style={{ fontSize: 11, color: MED_GRAY, marginTop: 2, ...F }}>
+                      {prop.city || ''}, {prop.state || ''} {prop.zip || ''}
+                      {prop.plan_tier && <span> {'\u2022'} {prop.plan_tier} plan</span>}
+                    </div>
+                    {latestInsp && (
+                      <div style={{ fontSize: 11, color: MED_GRAY, marginTop: 4, ...F }}>
+                        Last inspection: {latestInsp.date}
+                        {latestRating && <span style={{ color: latestRc, fontWeight: 700 }}> {'\u2022'} {latestRating}</span>}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ background: TEAL_LIGHT, borderRadius: 20, padding: '4px 10px', fontSize: 11, fontWeight: 700, color: TEAL, ...F }}>
+                      {propInsps.length} {propInsps.length === 1 ? 'visit' : 'visits'}
+                    </div>
+                    <span style={{ color: TEAL_MED, fontSize: 18, transition: 'transform .2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>{'\u25BE'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {isExpanded && (
+                <div style={{ background: '#fff', borderRadius: '0 0 14px 14px', border: '1px solid ' + BORDER_GRAY, borderTop: 'none', padding: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 10, ...F }}>
+                    Inspection History
+                    <span style={{ fontWeight: 500, color: MED_GRAY }}> ({propInsps.length})</span>
+                  </div>
+
+                  {propInsps.length === 0 && (
+                    <div style={{ fontSize: 12, color: MED_GRAY, ...F }}>No inspections yet for this property</div>
+                  )}
+
+                  {propInsps.map(function(ins) {
+                    var ci2 = getCompInfo(ins);
+                    var counts2 = getCounts(ins);
+                    var r = ins.overall_rating || '';
+                    var r2c = r === 'Excellent' ? '#22C55E' : r === 'Good' ? TEAL : r === 'Fair' ? '#F59E0B' : r === 'Needs Attention' ? '#EF4444' : MED_GRAY;
+
+                    return (
+                      <div key={ins.id}
+                        onClick={function() { openInspection(ins.id); }}
+                        style={{ padding: '10px 12px', marginBottom: 6, background: LIGHT_GRAY, borderRadius: 10, border: '1px solid ' + BORDER_GRAY, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: DARK_GRAY, ...F }}>{ins.date || 'No date'}</div>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+                              {r && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 8, background: r2c + '15', color: r2c, ...F }}>{r}</span>}
+                              {counts2.good > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#22C55E', ...F }}>{'\u2713'}{counts2.good}</span>}
+                              {counts2.fair > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#F59E0B', ...F }}>~{counts2.fair}</span>}
+                              {counts2.attention > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#EF4444', ...F }}>!{counts2.attention}</span>}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: '50%', border: '2.5px solid ' + (ci2.pct === 100 ? '#22C55E' : TEAL), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: ci2.pct === 100 ? '#22C55E' : TEAL, ...F }}>{ci2.pct}%</span>
+                            </div>
+                            <span style={{ fontSize: 14, color: TEAL_MED }}>{'\u203A'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        </>}
+
+        {/* Contact footer */}
+        <div style={{ marginTop: 24, background: 'linear-gradient(135deg, ' + NAVY + ', ' + NAVY + 'dd)', borderRadius: 14, padding: 18, textAlign: 'center' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', ...F }}>Need Assistance?</div>
+          <div style={{ fontSize: 12, color: TEAL_MED, marginTop: 6, ...F }}>(904) 754-3614</div>
+          <div style={{ fontSize: 11, color: TEAL_MED, marginTop: 2, ...F }}>firstcoastpropertycare@gmail.com</div>
+        </div>
+
+        <div style={{ height: 20 }} />
+      </div>
+
+      {detailLoading && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: '24px 32px', textAlign: 'center', ...F }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: NAVY }}>Loading inspection...</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+var S2 = {
+  input: { width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid ' + BORDER_GRAY, fontSize: 13, color: DARK_GRAY, fontFamily: "'DM Sans', sans-serif", outline: 'none', boxSizing: 'border-box', background: LIGHT_GRAY, marginBottom: 8 },
+};
+
+var S = {
+  app: { maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: '#F5F7F8', fontFamily: "'DM Sans', sans-serif" },
+  body: { padding: 16 },
+  empty: { textAlign: 'center', padding: '32px 20px', background: '#fff', borderRadius: 16, border: '1px dashed ' + BORDER_GRAY, marginBottom: 12 },
+};
