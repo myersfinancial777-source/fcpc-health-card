@@ -64,6 +64,11 @@ export function CustomerPortal(props) {
   var [loading, setLoading] = useState(true);
   var [detailLoading, setDetailLoading] = useState(false);
   var [lightbox, setLightbox] = useState(null);
+  var [portalTab, setPortalTab] = useState('inspections');
+  var [quotes, setQuotes] = useState([]);
+  var [invoices, setInvoices] = useState([]);
+  var [workRequests, setWorkRequests] = useState([]);
+  var [wrForm, setWrForm] = useState(null);
 
   useEffect(function() { loadData(); }, [profile]);
 
@@ -81,6 +86,15 @@ export function CustomerPortal(props) {
       .eq('client_id', profile.client_id)
       .order('created_at', { ascending: false });
     if (inspsResp.data) setInspections(inspsResp.data);
+
+    var quotesResp = await supabase.from('quotes').select('*, quote_items(*)').eq('client_id', profile.client_id).in('status', ['sent', 'approved', 'declined']).order('created_at', { ascending: false });
+    if (quotesResp.data) setQuotes(quotesResp.data);
+
+    var invoicesResp = await supabase.from('invoices').select('*, invoice_items(*)').eq('client_id', profile.client_id).in('status', ['sent', 'paid', 'overdue']).order('created_at', { ascending: false });
+    if (invoicesResp.data) setInvoices(invoicesResp.data);
+
+    var wrResp = await supabase.from('work_requests').select('*, properties(address)').eq('client_id', profile.client_id).order('created_at', { ascending: false });
+    if (wrResp.data) setWorkRequests(wrResp.data);
 
     setLoading(false);
   }
@@ -106,6 +120,42 @@ export function CustomerPortal(props) {
       setView('detail');
     }
     setDetailLoading(false);
+  }
+
+  async function approveQuote(quoteId) {
+    await supabase.from('quotes').update({ status: 'approved', approved_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', quoteId);
+    loadData();
+  }
+
+  async function declineQuote(quoteId) {
+    await supabase.from('quotes').update({ status: 'declined', declined_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', quoteId);
+    loadData();
+  }
+
+  async function payInvoice(invoiceId) {
+    try {
+      var resp = await fetch('/api/stripe-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create-checkout', invoice_id: invoiceId }),
+      });
+      var data = await resp.json();
+      if (data.url) window.location.href = data.url;
+      else alert('Could not create payment session. Please try again.');
+    } catch (err) {
+      alert('Payment error. Please try again.');
+    }
+  }
+
+  async function submitWorkRequest(data) {
+    var id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    await supabase.from('work_requests').insert({
+      id: id, client_id: profile.client_id, property_id: data.property_id || null,
+      title: data.title, description: data.description, urgency: data.urgency || 'normal',
+      status: 'new', created_at: new Date().toISOString(),
+    });
+    setWrForm(null);
+    loadData();
   }
 
   /* -- Header -- */
@@ -316,145 +366,30 @@ export function CustomerPortal(props) {
   /* -- Dashboard -- */
   var clientName = client ? client.first_name + ' ' + client.last_name : '';
 
+  var STATUS_COLORS = {
+    draft: '#9CA3AF', sent: '#3B82F6', approved: '#22C55E', declined: '#EF4444', expired: '#F59E0B',
+    paid: '#22C55E', overdue: '#EF4444', cancelled: '#9CA3AF',
+    new: '#3B82F6', reviewed: '#F59E0B', quoted: '#8B5CF6', scheduled: TEAL, completed: '#22C55E',
+  };
+
   return (
     <div style={S.app}>
       <Header />
       <div style={S.body}>
 
         {/* Welcome */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 20, fontWeight: 800, color: NAVY, ...F }}>Welcome, {client ? client.first_name : 'there'}!</div>
-          <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 2, ...F }}>Your property inspection dashboard</div>
+          <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 2, ...F }}>Your property dashboard</div>
         </div>
 
-        {/* Summary cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
-          <div style={{ background: '#fff', border: '1px solid ' + BORDER_GRAY, borderRadius: 12, padding: 14, textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 800, color: TEAL, ...F }}>{properties.length}</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: MED_GRAY, textTransform: 'uppercase', ...F }}>{properties.length === 1 ? 'Property' : 'Properties'}</div>
-          </div>
-          <div style={{ background: '#fff', border: '1px solid ' + BORDER_GRAY, borderRadius: 12, padding: 14, textAlign: 'center' }}>
-            <div style={{ fontSize: 24, fontWeight: 800, color: NAVY, ...F }}>{inspections.length}</div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: MED_GRAY, textTransform: 'uppercase', ...F }}>{inspections.length === 1 ? 'Inspection' : 'Inspections'}</div>
-          </div>
-        </div>
-
-        {/* Properties */}
-        <div style={{ fontSize: 15, fontWeight: 700, color: NAVY, marginBottom: 12, ...F }}>Your Properties</div>
-
-        {properties.length === 0 && (
-          <div style={S.empty}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>{'\u{1F3E0}'}</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: NAVY, ...F }}>No properties yet</div>
-            <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 4, ...F }}>Contact us to get started with inspections</div>
-          </div>
-        )}
-
-        {properties.map(function(prop) {
-          var isExpanded = expandedProp === prop.id;
-          var propInsps = inspections.filter(function(i) { return i.property_id === prop.id; });
-          var latestInsp = propInsps[0];
-          var latestRating = latestInsp ? (latestInsp.overall_rating || '') : '';
-          var latestRc = latestRating === 'Excellent' ? '#22C55E' : latestRating === 'Good' ? TEAL : latestRating === 'Fair' ? '#F59E0B' : latestRating === 'Needs Attention' ? '#EF4444' : MED_GRAY;
-
-          return (
-            <div key={prop.id} style={{ marginBottom: 10 }}>
-              <div onClick={function() { setExpandedProp(isExpanded ? null : prop.id); }}
-                style={{ background: '#fff', borderRadius: isExpanded ? '14px 14px 0 0' : 14, padding: '14px 16px', border: '1px solid ' + BORDER_GRAY, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.04)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: NAVY, ...F }}>{prop.address}</div>
-                    {prop.unit_suite && <div style={{ fontSize: 12, color: MED_GRAY, ...F }}>Unit: {prop.unit_suite}</div>}
-                    <div style={{ fontSize: 11, color: MED_GRAY, marginTop: 2, ...F }}>
-                      {prop.city || ''}, {prop.state || ''} {prop.zip || ''}
-                      {prop.plan_tier && <span> {'\u2022'} {prop.plan_tier} plan</span>}
-                    </div>
-                    {latestInsp && (
-                      <div style={{ fontSize: 11, color: MED_GRAY, marginTop: 4, ...F }}>
-                        Last inspection: {latestInsp.date}
-                        {latestRating && <span style={{ color: latestRc, fontWeight: 700 }}> {'\u2022'} {latestRating}</span>}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ background: TEAL_LIGHT, borderRadius: 20, padding: '4px 10px', fontSize: 11, fontWeight: 700, color: TEAL, ...F }}>
-                      {propInsps.length} {propInsps.length === 1 ? 'visit' : 'visits'}
-                    </div>
-                    <span style={{ color: TEAL_MED, fontSize: 18, transition: 'transform .2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>{'\u25BE'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {isExpanded && (
-                <div style={{ background: '#fff', borderRadius: '0 0 14px 14px', border: '1px solid ' + BORDER_GRAY, borderTop: 'none', padding: 14 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 10, ...F }}>
-                    Inspection History
-                    <span style={{ fontWeight: 500, color: MED_GRAY }}> ({propInsps.length})</span>
-                  </div>
-
-                  {propInsps.length === 0 && (
-                    <div style={{ fontSize: 12, color: MED_GRAY, ...F }}>No inspections yet for this property</div>
-                  )}
-
-                  {propInsps.map(function(ins) {
-                    var ci2 = getCompInfo(ins);
-                    var counts2 = getCounts(ins);
-                    var r = ins.overall_rating || '';
-                    var r2c = r === 'Excellent' ? '#22C55E' : r === 'Good' ? TEAL : r === 'Fair' ? '#F59E0B' : r === 'Needs Attention' ? '#EF4444' : MED_GRAY;
-
-                    return (
-                      <div key={ins.id}
-                        onClick={function() { openInspection(ins.id); }}
-                        style={{ padding: '10px 12px', marginBottom: 6, background: LIGHT_GRAY, borderRadius: 10, border: '1px solid ' + BORDER_GRAY, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: DARK_GRAY, ...F }}>{ins.date || 'No date'}</div>
-                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
-                              {r && <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 8, background: r2c + '15', color: r2c, ...F }}>{r}</span>}
-                              {counts2.good > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#22C55E', ...F }}>{'\u2713'}{counts2.good}</span>}
-                              {counts2.fair > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#F59E0B', ...F }}>~{counts2.fair}</span>}
-                              {counts2.attention > 0 && <span style={{ fontSize: 10, fontWeight: 600, color: '#EF4444', ...F }}>!{counts2.attention}</span>}
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: '50%', border: '2.5px solid ' + (ci2.pct === 100 ? '#22C55E' : TEAL), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <span style={{ fontSize: 11, fontWeight: 800, color: ci2.pct === 100 ? '#22C55E' : TEAL, ...F }}>{ci2.pct}%</span>
-                            </div>
-                            <span style={{ fontSize: 14, color: TEAL_MED }}>{'\u203A'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Contact footer */}
-        <div style={{ marginTop: 24, background: 'linear-gradient(135deg, ' + NAVY + ', ' + NAVY + 'dd)', borderRadius: 14, padding: 18, textAlign: 'center' }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', ...F }}>Need Assistance?</div>
-          <div style={{ fontSize: 12, color: TEAL_MED, marginTop: 6, ...F }}>(904) 754-3614</div>
-          <div style={{ fontSize: 11, color: TEAL_MED, marginTop: 2, ...F }}>firstcoastpropertycare@gmail.com</div>
-        </div>
-
-        <div style={{ height: 20 }} />
-      </div>
-
-      {detailLoading && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 9998, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '24px 32px', textAlign: 'center', ...F }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: NAVY }}>Loading inspection...</div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-var S = {
-  app: { maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: '#F5F7F8', fontFamily: "'DM Sans', sans-serif" },
-  body: { padding: 16 },
-  empty: { textAlign: 'center', padding: '32px 20px', background: '#fff', borderRadius: 16, border: '1px dashed ' + BORDER_GRAY, marginBottom: 12 },
-};
+        {/* Portal tabs */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+          {[{ key: 'inspections', label: 'Inspections' }, { key: 'billing', label: 'Billing' }, { key: 'requests', label: 'Requests' }].map(function(t) {
+            return (
+              <button key={t.key} onClick={function() { setPortalTab(t.key); }}
+                style={{ flex: 1, padding: '10px 6px', borderRadius: 10, border: portalTab === t.key ? '2px solid ' + TEAL : '1px solid ' + BORDER_GRAY,
+                  background: portalTab === t.key ? TEAL : '#fff', color: portalTab === t.key ? '#fff' : MED_GRAY,
+                  fontSize: 12, fontWeight: 700, cursor: 'pointer', ...F }}>
+                {t.label}
+                {t.key === 'billing' && invoices.filter(function(i) { return i.status === 'sent'; }).length > 0 
