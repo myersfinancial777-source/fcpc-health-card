@@ -4,6 +4,7 @@ import { loadInspections, saveInspection, deleteInspection as dbDelete } from '.
 import { sendEmail, initEmailJS } from './email.js';
 import { compressImage, genId, todayStr, getCompInfo, getCounts, getTotalPhotos } from './utils.js';
 import { ClientList, ClientForm, ClientDetail } from './CRM.jsx';
+import { QuotesList, QuoteForm, InvoicesList, InvoiceForm, WorkRequestsList } from './AdminBilling.jsx';
 import logoUrl from '/logo.png?url';
 import { supabase } from './supabase.js';
 import { AuthScreen } from './Auth.jsx';
@@ -161,6 +162,9 @@ export default function App() {
   const [showEmail, setShowEmail] = useState(false);
   const [saving, setSaving] = useState(false);
   const [crmView, setCrmView] = useState('list');
+  const [billingView, setBillingView] = useState('quotes');
+  const [billingForm, setBillingForm] = useState(null);
+  const [editingId, setEditingId] = useState(null);
   const [selectedClientId, setSelectedClientId] = useState(null);
 
   // Auth state
@@ -257,8 +261,8 @@ export default function App() {
   function TabBar() {
     return (
       <div style={{ display: 'flex', background: '#fff', borderBottom: `1px solid ${BORDER_GRAY}`, position: 'sticky', top: 0, zIndex: 99 }}>
-        {[{ key: 'inspections', label: '\u{1F4CB} Inspections' }, { key: 'clients', label: '\u{1F464} Clients' }].map(t => (
-          <button key={t.key} onClick={() => { setTab(t.key); setView('list'); setCrmView('list'); setCurrentId(null); }}
+        {[{ key: 'inspections', label: '\u{1F4CB} Inspections' }, { key: 'clients', label: '\u{1F464} Clients' }, { key: 'billing', label: '\u{1F4B0} Billing' }].map(t => (
+          <button key={t.key} onClick={() => { setTab(t.key); setView('list'); setCrmView('list'); setBillingView('quotes'); setBillingForm(null); setEditingId(null); setCurrentId(null); }}
             style={{ flex: 1, padding: '12px', background: tab === t.key ? '#fff' : LIGHT_GRAY, border: 'none',
               borderBottom: tab === t.key ? `3px solid ${TEAL}` : '3px solid transparent',
               fontSize: 13, fontWeight: tab === t.key ? 700 : 500, color: tab === t.key ? NAVY : MED_GRAY,
@@ -324,6 +328,37 @@ export default function App() {
               setView('summary');
             }}
           />
+        )}
+
+        {/* -- Billing tab -- */}
+        {tab === 'billing' && !billingForm && (
+          <div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+              {['quotes', 'invoices', 'requests'].map(v => (
+                <button key={v} onClick={() => setBillingView(v)}
+                  style={{ flex: 1, padding: '8px', borderRadius: 10, border: billingView === v ? '2px solid ' + TEAL : '1px solid ' + BORDER_GRAY,
+                    background: billingView === v ? TEAL : '#fff', color: billingView === v ? '#fff' : MED_GRAY,
+                    fontSize: 11, fontWeight: 700, cursor: 'pointer', textTransform: 'capitalize', ...F }}>
+                  {v}
+                </button>
+              ))}
+            </div>
+            {billingView === 'quotes' && <QuotesList onNew={() => setBillingForm('new-quote')} onEdit={(id) => { setEditingId(id); setBillingForm('edit-quote'); }} />}
+            {billingView === 'invoices' && <InvoicesList onNew={() => setBillingForm('new-invoice')} onEdit={(id) => { setEditingId(id); setBillingForm('edit-invoice'); }} />}
+            {billingView === 'requests' && <WorkRequestsList />}
+          </div>
+        )}
+        {tab === 'billing' && billingForm === 'new-quote' && (
+          <QuoteForm onSave={() => { setBillingForm(null); }} onCancel={() => setBillingForm(null)} />
+        )}
+        {tab === 'billing' && billingForm === 'edit-quote' && (
+          <QuoteForm quoteId={editingId} onSave={() => { setBillingForm(null); setEditingId(null); }} onCancel={() => { setBillingForm(null); setEditingId(null); }} />
+        )}
+        {tab === 'billing' && billingForm === 'new-invoice' && (
+          <InvoiceForm onSave={() => { setBillingForm(null); }} onCancel={() => setBillingForm(null)} />
+        )}
+        {tab === 'billing' && billingForm === 'edit-invoice' && (
+          <InvoiceForm invoiceId={editingId} onSave={() => { setBillingForm(null); setEditingId(null); }} onCancel={() => { setBillingForm(null); setEditingId(null); }} />
         )}
 
         {/* -- Inspections tab -- */}
