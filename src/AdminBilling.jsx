@@ -264,9 +264,7 @@ export function QuoteForm(props) {
       <button onClick={props.onCancel} style={Object.assign({}, S.secBtn, { width: '100%' })}>Cancel</button>
     </div>
   );
-}
-
-/* ---- Invoices List ---- */
+}/* ---- Invoices List ---- */
 export function InvoicesList(props) {
   var [invoices, setInvoices] = useState([]);
   var [loading, setLoading] = useState(true);
@@ -455,4 +453,124 @@ export function InvoiceForm(props) {
       <div style={S.infoCard}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <div style={S.label}>Line Items</div>
-          <button onClick={addItem} style={Object.assign({}, S.smallBtn, { backgro
+          <button onClick={addItem} style={Object.assign({}, S.smallBtn, { background: TEAL, color: '#fff' })}>+ Add Item</button>
+        </div>
+
+        {items.length === 0 && <div style={{ fontSize: 12, color: MED_GRAY, ...F, padding: '10px 0' }}>No line items yet</div>}
+
+        {items.map(function(item, idx) {
+          return (
+            <div key={item.id} style={{ background: idx % 2 === 0 ? '#fff' : LIGHT_GRAY, padding: '10px', borderRadius: 8, marginBottom: 6, border: '1px solid ' + BORDER_GRAY + '44' }}>
+              <input style={S.input} placeholder="Description" value={item.description} onChange={function(e) { updateItem(idx, { description: e.target.value }); }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 9, color: MED_GRAY, ...F }}>Qty</div>
+                  <input style={S.input} type="number" step="0.5" value={item.quantity} onChange={function(e) { updateItem(idx, { quantity: e.target.value }); }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: MED_GRAY, ...F }}>Price</div>
+                  <input style={S.input} type="number" step="0.01" value={item.unit_price} onChange={function(e) { updateItem(idx, { unit_price: e.target.value }); }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: MED_GRAY, ...F }}>Total</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: NAVY, padding: '10px 0', ...F }}>${Number(item.total || 0).toFixed(2)}</div>
+                </div>
+                <button onClick={function() { removeItem(idx); }} style={{ background: '#FEF2F2', border: 'none', borderRadius: 8, padding: '6px 10px', color: '#EF4444', fontSize: 12, fontWeight: 600, cursor: 'pointer', ...F, marginTop: 12 }}>X</button>
+              </div>
+            </div>
+          );
+        })}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 0', borderTop: '2px solid ' + NAVY }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: NAVY, ...F }}>Total: ${calcTotal().toFixed(2)}</div>
+        </div>
+      </div>
+
+      <div style={S.infoCard}>
+        <div style={S.label}>Notes</div>
+        <textarea style={Object.assign({}, S.input, { minHeight: 60, resize: 'vertical' })} placeholder="Internal notes..." value={form.notes || ''} onChange={function(e) { upd({ notes: e.target.value }); }} />
+      </div>
+
+      <button onClick={function() { handleSave('draft'); }} disabled={saving} style={Object.assign({}, S.primaryBtn, { width: '100%', padding: '14px', fontSize: 14, marginBottom: 8 })}>
+        {saving ? 'Saving...' : 'Save as Draft'}
+      </button>
+      <button onClick={function() { handleSave('sent'); }} disabled={saving} style={Object.assign({}, S.sendBtn, { width: '100%', padding: '14px', fontSize: 14, marginBottom: 8 })}>
+        {saving ? 'Saving...' : 'Save & Send to Customer'}
+      </button>
+      <button onClick={props.onCancel} style={Object.assign({}, S.secBtn, { width: '100%' })}>Cancel</button>
+    </div>
+  );
+}/* ---- Work Requests List (Admin View) ---- */
+export function WorkRequestsList() {
+  var [requests, setRequests] = useState([]);
+  var [loading, setLoading] = useState(true);
+
+  useEffect(function() { loadRequests(); }, []);
+
+  async function loadRequests() {
+    var resp = await supabase.from('work_requests').select('*, clients(first_name, last_name), properties(address)').order('created_at', { ascending: false });
+    if (resp.data) setRequests(resp.data);
+    setLoading(false);
+  }
+
+  async function updateStatus(id, status) {
+    await supabase.from('work_requests').update({ status: status, updated_at: new Date().toISOString() }).eq('id', id);
+    loadRequests();
+  }
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: MED_GRAY, ...F }}>Loading...</div>;
+
+  return (
+    <div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: NAVY, marginBottom: 12, ...F }}>Work Requests</div>
+
+      {requests.length === 0 && (
+        <div style={S.empty}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>{'\u{1F4E9}'}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: NAVY, ...F }}>No work requests yet</div>
+          <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 4, ...F }}>Customers can submit requests from their portal</div>
+        </div>
+      )}
+
+      {requests.map(function(wr) {
+        var clientName = wr.clients ? wr.clients.first_name + ' ' + wr.clients.last_name : 'Unknown';
+        var propAddr = wr.properties ? wr.properties.address : '';
+        var urgencyColor = wr.urgency === 'emergency' ? '#EF4444' : wr.urgency === 'high' ? '#F59E0B' : TEAL;
+
+        return (
+          <div key={wr.id} style={S.card}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: NAVY, ...F }}>{wr.title}</div>
+                <div style={{ fontSize: 12, color: MED_GRAY, marginTop: 2, ...F }}>{clientName}{propAddr ? ' \u2022 ' + propAddr : ''}</div>
+                {wr.description && <div style={{ fontSize: 12, color: DARK_GRAY, marginTop: 6, lineHeight: 1.5, ...F }}>{wr.description}</div>}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                <StatusBadge status={wr.status} />
+                <span style={{ fontSize: 9, fontWeight: 700, color: urgencyColor, textTransform: 'uppercase', ...F }}>{wr.urgency}</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+              {wr.status === 'new' && <button onClick={function() { updateStatus(wr.id, 'reviewed'); }} style={Object.assign({}, S.smallBtn, { background: TEAL, color: '#fff' })}>Mark Reviewed</button>}
+              {wr.status === 'reviewed' && <button onClick={function() { updateStatus(wr.id, 'scheduled'); }} style={Object.assign({}, S.smallBtn, { background: TEAL, color: '#fff' })}>Mark Scheduled</button>}
+              {(wr.status === 'scheduled' || wr.status === 'reviewed') && <button onClick={function() { updateStatus(wr.id, 'completed'); }} style={Object.assign({}, S.smallBtn, { background: '#22C55E', color: '#fff' })}>Complete</button>}
+            </div>
+            <div style={{ fontSize: 10, color: MED_GRAY, marginTop: 8, ...F }}>{new Date(wr.created_at).toLocaleString()}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+var S = {
+  primaryBtn: { background: 'linear-gradient(135deg, ' + TEAL + ', #1a9e8e)', color: '#fff', border: 'none', borderRadius: 24, padding: '10px 22px', fontSize: 13, fontWeight: 700, cursor: 'pointer', ...F, boxShadow: '0 4px 14px ' + TEAL + '44' },
+  sendBtn: { background: 'linear-gradient(135deg, ' + NAVY + ', #153060)', color: '#fff', border: 'none', borderRadius: 14, padding: '14px', fontSize: 14, fontWeight: 700, cursor: 'pointer', ...F, boxShadow: '0 4px 14px ' + NAVY + '44' },
+  secBtn: { background: '#fff', color: TEAL, border: '2px solid ' + TEAL, borderRadius: 14, padding: '12px', fontSize: 14, fontWeight: 700, cursor: 'pointer', ...F },
+  smallBtn: { border: 'none', borderRadius: 20, padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer', ...F },
+  card: { background: '#fff', borderRadius: 14, padding: '14px 16px', marginBottom: 10, border: '1px solid ' + BORDER_GRAY, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,.04)' },
+  infoCard: { background: '#fff', borderRadius: 14, padding: 16, marginBottom: 12, border: '1px solid ' + BORDER_GRAY, boxShadow: '0 2px 8px rgba(0,0,0,.04)' },
+  input: { width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid ' + BORDER_GRAY, fontSize: 13, color: DARK_GRAY, ...F, outline: 'none', boxSizing: 'border-box', background: LIGHT_GRAY, marginBottom: 8 },
+  label: { fontSize: 11, fontWeight: 700, color: TEAL, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4, ...F },
+  empty: { textAlign: 'center', padding: '32px 20px', background: '#fff', borderRadius: 16, border: '1px dashed ' + BORDER_GRAY, marginBottom: 12 },
+};
