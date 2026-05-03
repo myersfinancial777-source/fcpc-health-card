@@ -661,5 +661,3 @@ const S = {
   tag: { fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 10, ...F },
   delBtn: { position: 'absolute', bottom: 10, right: 14, background: 'transparent', border: 'none', color: '#EF4444', fontSize: 11, fontWeight: 600, cursor: 'pointer', ...F },
 };
-
-};
