@@ -3,6 +3,7 @@ import { NAVY, TEAL, TEAL_LIGHT, TEAL_MED, DARK_GRAY, MED_GRAY, LIGHT_GRAY, BORD
 import { loadInspections, saveInspection, deleteInspection as dbDelete } from './supabase.js';
 import { sendEmail, initEmailJS } from './email.js';
 import { compressImage, genId, todayStr, getCompInfo, getCounts, getTotalPhotos } from './utils.js';
+import { brandPhoto } from './brandPhoto.js';
 import { ClientList, ClientForm, ClientDetail } from './CRM.jsx';
 import { QuotesList, QuoteForm, InvoicesList, InvoiceForm, WorkRequestsList } from './AdminBilling.jsx';
 import logoUrl from '/logo.png?url';
@@ -48,9 +49,22 @@ function OverallProgress({ statuses }) {
     <div style={{ flex: 1 }}><div style={{ color: '#fff', fontSize: 13, fontWeight: 600, ...F, marginBottom: 6 }}>Inspection Progress</div><div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,.15)', overflow: 'hidden' }}><div style={{ width: `${p}%`, height: '100%', background: p === 100 ? '#22C55E' : `linear-gradient(90deg,${TEAL},${TEAL_MED})`, borderRadius: 3, transition: 'width .4s' }} /></div><div style={{ color: TEAL_MED, fontSize: 11, marginTop: 4, ...F }}>{d} of {t} items</div></div></div>);
 }
 
-function PhotoRow({ photos, onAdd, onRemove, onTap }) {
+function PhotoRow({ photos, onAdd, onRemove, onTap, brandOpts }) {
   const camRef = useRef(null), fileRef = useRef(null);
-  async function proc(e) { for (const f of Array.from(e.target.files || [])) { const c = await compressImage(f); if (c) onAdd(c); } e.target.value = ''; }
+  async function proc(e) {
+    for (const f of Array.from(e.target.files || [])) {
+      const c = await compressImage(f);
+      if (c) {
+        // Brand the photo with logo + property + timestamp at capture time
+        const branded = await brandPhoto(c, {
+          propertyAddress: brandOpts?.propertyAddress || '',
+          timestamp: new Date(),
+        });
+        onAdd(branded);
+      }
+    }
+    e.target.value = '';
+  }
   return (<div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8, alignItems: 'center' }}>
     {photos.map((src, i) => (<div key={i} style={{ position: 'relative', width: 56, height: 56, borderRadius: 8, overflow: 'hidden', border: `1px solid ${BORDER_GRAY}`, flexShrink: 0 }}>
       <img src={src} alt="" onClick={() => onTap?.(src)} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} />
@@ -64,7 +78,7 @@ function PhotoRow({ photos, onAdd, onRemove, onTap }) {
   </div>);
 }
 
-function Lightbox({ src, onClose }) { if (!src) return null; return (<div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.88)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}><img src={src} alt="" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: 8, objectFit: 'contain' }} /><button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,.2)', color: '#fff', border: 'none', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button></div>); }
+function Lightbox({ src, onClose }) { if (!src) return null; return (<div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.88)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}><img src={src} alt="" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: 8, objectFit: 'contain' }} /><button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,.2)', color: '#fff', border: 'none', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{'\u00D7'}</button></div>); }
 
 function ItemNote({ value, onChange }) {
   return (<textarea value={value} onChange={e => onChange(e.target.value)} placeholder="Add a note about this item..."
@@ -97,7 +111,7 @@ function EmailModal({ inspection, onClose }) {
     </div></div>);
 }
 
-/* -- PDF Preview ----------------------------------- */
+/* -- PDF Preview (REDESIGNED) ---------------------- */
 function PdfPreview({ inspection, onClose }) {
   const sL = k => STATUS_OPTIONS.find(o => o.key === k)?.label || '\u2014';
   const sC = k => STATUS_OPTIONS.find(o => o.key === k)?.color || MED_GRAY;
@@ -106,47 +120,202 @@ function PdfPreview({ inspection, onClose }) {
   const att = []; SECTIONS.forEach(sec => sec.items.forEach(item => { if (inspection.statuses[item] === 'attention') att.push({ section: sec.title, item, note: inspection.itemNotes?.[item] || '' }); }));
   const photoEntries = []; SECTIONS.forEach(sec => sec.items.forEach(item => { const p = inspection.photos?.[item] || []; if (p.length > 0) photoEntries.push({ section: sec.title, item, pics: p }); }));
 
+  // Generation timestamp for the report
+  const genDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const genTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+  // Helper: per-section completion count
+  const sectionCount = (sec) => {
+    const completed = sec.items.filter(i => inspection.statuses[i] != null).length;
+    return { completed, total: sec.items.length };
+  };
+
   return (<div id="pdf-preview-root">
-    <style>{`@media print { body * { visibility: hidden !important; } #pdf-preview-root, #pdf-preview-root * { visibility: visible !important; } #pdf-preview-root { position: absolute; left: 0; top: 0; width: 100%; } .no-print { display: none !important; } .no-break { break-inside: avoid; } .page-break { break-before: page; } }`}</style>
+    <style>{`
+      @media print {
+        body * { visibility: hidden !important; }
+        #pdf-preview-root, #pdf-preview-root * { visibility: visible !important; }
+        #pdf-preview-root { position: absolute; left: 0; top: 0; width: 100%; }
+        .no-print { display: none !important; }
+        .no-break { break-inside: avoid; page-break-inside: avoid; }
+        .page-break { break-before: page; page-break-before: always; }
+        @page { margin: 0.4in; size: letter; }
+      }
+      .pdf-row { display: flex; align-items: center; padding: 6px 28px; font-size: 11.5px; gap: 0; }
+      .pdf-row-name { color: #333333; font-weight: 500; padding-right: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .pdf-row-leader { flex: 1; min-width: 16px; height: 1px; border-bottom: 1.5px dotted #C0C8CC; margin: 0 6px 4px 6px; align-self: flex-end; }
+      .pdf-row-cam { font-size: 11px; flex-shrink: 0; padding: 0 4px; }
+      .pdf-row-note { font-size: 10.5px; color: #92400E; background: #FFF9F0; padding: 4px 28px 6px 42px; font-style: italic; border-left: 3px solid #F59E0B; }
+    `}</style>
+
     <div className="no-print" style={{ position: 'sticky', top: 0, zIndex: 200, background: NAVY, padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `3px solid ${TEAL}` }}>
       <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: TEAL_MED, fontSize: 14, fontWeight: 600, cursor: 'pointer', ...F }}>{'\u2190'} Back</button>
       <span style={{ color: '#fff', fontWeight: 700, fontSize: 14, ...F }}>PDF Preview</span>
       <button onClick={() => window.print()} style={{ background: TEAL, color: '#fff', border: 'none', borderRadius: 20, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', ...F }}>{'\u{1F5A8}'} Print / Save</button>
     </div>
-    <div style={{ background: '#fff', maxWidth: 800, margin: '0 auto', boxShadow: '0 2px 20px rgba(0,0,0,.1)' }}>
-      <div style={{ background: NAVY, color: '#fff', padding: '18px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img src={logoUrl} alt="Logo" style={{ height: 48 }} />
-          <div><div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.2 }}>First Coast Property Care</div><div style={{ fontSize: 9, color: TEAL_MED, letterSpacing: 1.5, textTransform: 'uppercase' }}>Jacksonville, FL</div></div></div>
-        <div style={{ textAlign: 'right' }}><div style={{ fontSize: 16, fontWeight: 700 }}>Property Health Card</div><div style={{ fontSize: 9, color: TEAL_MED, marginTop: 2 }}>Preventative Maintenance Inspection Report</div></div></div>
-      <div style={{ height: 3, background: `linear-gradient(90deg,${TEAL},${TEAL_MED})` }} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px 20px', padding: '12px 28px', background: LIGHT_GRAY, borderBottom: `1px solid ${BORDER_GRAY}` }}>
-        {[{ l: 'Property Address', v: inspection.propertyAddress, span: 2 }, { l: 'Unit / Suite', v: inspection.unitSuite }, { l: 'Owner / Manager', v: inspection.ownerManager }, { l: 'Plan Tier', v: inspection.planTier }, { l: 'Date', v: inspection.date }].map((f, i) => (
-          <div key={i} style={f.span ? { gridColumn: 'span 2' } : {}}><div style={{ fontSize: 8, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: .5 }}>{f.l}</div><div style={{ fontSize: 12, fontWeight: 600, color: NAVY, marginTop: 1 }}>{f.v || '\u2014'}</div></div>))}</div>
-      <div style={{ display: 'flex', gap: 14, padding: '10px 28px', borderBottom: `1px solid ${BORDER_GRAY}`, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 10, fontWeight: 700, color: NAVY }}>STATUS:</span>
-        {STATUS_OPTIONS.map(o => <div key={o.key} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600 }}><div style={{ width: 9, height: 9, borderRadius: '50%', background: o.color }} />{o.label}: <strong>{counts[o.key]}</strong></div>)}
-        <div style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: TEAL }}><strong>{done}/{total}</strong> checked</div></div>
-      {SECTIONS.map(sec => (<div key={sec.title} className="no-break">
-        <div style={{ background: NAVY, color: '#fff', padding: '7px 28px', fontSize: 11, fontWeight: 700, letterSpacing: .5, borderLeft: `4px solid ${TEAL}`, marginTop: 6 }}>{sec.icon} {sec.title.toUpperCase()}</div>
-        {sec.items.map((item, idx) => { const s = inspection.statuses[item], sc = sC(s), sl = sL(s), hasP = (inspection.photos?.[item] || []).length > 0, note = inspection.itemNotes?.[item] || ''; return (<div key={item}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 28px', fontSize: 11, borderBottom: `1px solid ${BORDER_GRAY}15`, background: idx % 2 === 0 ? '#fff' : LIGHT_GRAY }}>
-            <div style={{ flex: 1 }}>{item}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{hasP && <span style={{ fontSize: 8, color: TEAL, fontWeight: 600 }}>{'\u{1F4F7}'}</span>}<div style={{ fontWeight: 700, fontSize: 10, padding: '2px 10px', borderRadius: 10, background: sc + '15', color: sc, border: `1px solid ${sc}33`, minWidth: 70, textAlign: 'center' }}>{sl}</div></div></div>
-          {note && <div style={{ padding: '2px 28px 6px 42px', fontSize: 10, color: '#92400E', background: idx % 2 === 0 ? '#fff' : LIGHT_GRAY, fontStyle: 'italic' }}>Note: {note}</div>}</div>); })}</div>))}
-      {inspection.notes && <div className="no-break" style={{ padding: '14px 28px', borderTop: `1px solid ${BORDER_GRAY}` }}><div style={{ fontSize: 10, fontWeight: 700, color: TEAL, textTransform: 'uppercase', marginBottom: 4 }}>Notes & Observations</div><div style={{ fontSize: 11, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{inspection.notes}</div></div>}
-      {inspection.overallRating && <div className="no-break" style={{ background: TEAL_LIGHT, border: `1px solid ${TEAL}44`, borderRadius: 6, margin: '10px 28px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ fontSize: 11, fontWeight: 700, color: NAVY }}>OVERALL PROPERTY RATING:</span><span style={{ fontSize: 13, fontWeight: 800, color: TEAL }}>{inspection.overallRating}</span></div>}
-      {att.length > 0 && <div className="no-break" style={{ margin: '10px 28px', padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 6 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#DC2626', marginBottom: 5 }}>{'\u26A0'} Items Requiring Attention</div>
-        {att.map((a, i) => <div key={i} style={{ fontSize: 10, color: '#991B1B', padding: '2px 0', borderBottom: '1px solid #FECACA' }}><strong>{a.section}:</strong> {a.item}{a.note ? ` \u2014 ${a.note}` : ''}</div>)}</div>}
-      <div className="no-break" style={{ display: 'flex', gap: 28, padding: '24px 28px 12px' }}>
-        <div style={{ flex: 1, borderTop: `1px solid ${NAVY}`, paddingTop: 4, fontSize: 8, color: MED_GRAY }}>Inspector Signature</div>
-        <div style={{ flex: 1, borderTop: `1px solid ${NAVY}`, paddingTop: 4, fontSize: 8, color: MED_GRAY }}>Date</div></div>
-      {photoEntries.length > 0 && <><div className="page-break" /><div style={{ background: NAVY, color: '#fff', padding: '10px 28px', fontSize: 13, fontWeight: 700, borderLeft: `4px solid ${TEAL}`, marginTop: 8 }}>{'\u{1F4F7}'} Photo Documentation</div>
-        {photoEntries.map((pe, idx) => <div key={idx} className="no-break" style={{ padding: '10px 28px', borderBottom: `1px solid ${BORDER_GRAY}22` }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: NAVY, marginBottom: 1 }}>{pe.item}</div><div style={{ fontSize: 9, color: MED_GRAY, marginBottom: 6 }}>{pe.section}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>{pe.pics.map((src, j) => <img key={j} src={src} alt="" style={{ width: 200, height: 150, objectFit: 'cover', borderRadius: 4, border: `1px solid ${BORDER_GRAY}` }} />)}</div></div>)}</>}
-      <div style={{ background: NAVY, padding: '10px 28px', textAlign: 'center', marginTop: 12, borderTop: `3px solid ${TEAL}` }}><div style={{ fontSize: 8, color: TEAL_MED }}>First Coast Property Care | Jacksonville, FL | "We Handle the Small Things Before They Become Big Problems."</div></div>
+
+    <div style={{ background: '#fff', maxWidth: 800, margin: '0 auto', boxShadow: '0 2px 20px rgba(0,0,0,.1)', ...F }}>
+
+      {/* HEADER */}
+      <div style={{ background: NAVY, color: '#fff', padding: '20px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <img src={logoUrl} alt="Logo" style={{ height: 54, background: '#fff', borderRadius: 6, padding: 4 }} />
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 800, lineHeight: 1.1, fontFamily: "'Playfair Display', serif" }}>First Coast Property Care</div>
+            <div style={{ fontSize: 9, color: TEAL_MED, letterSpacing: 1.8, textTransform: 'uppercase', marginTop: 3 }}>Jacksonville & St. Augustine, FL</div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 17, fontWeight: 700 }}>Property Health Card</div>
+          <div style={{ fontSize: 9, color: TEAL_MED, marginTop: 2, letterSpacing: 0.5 }}>Preventative Maintenance Inspection Report</div>
+          <div style={{ fontSize: 9, color: TEAL_MED, marginTop: 6, opacity: 0.8 }}>Report Generated: {genDate} {'\u2022'} {genTime}</div>
+        </div>
+      </div>
+      <div style={{ height: 4, background: `linear-gradient(90deg,${TEAL},${TEAL_MED})` }} />
+
+      {/* PROPERTY DETAILS */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px 24px', padding: '16px 28px', background: LIGHT_GRAY, borderBottom: `1px solid ${BORDER_GRAY}` }}>
+        {[
+          { l: 'Property Address', v: inspection.propertyAddress, span: 2 },
+          { l: 'Unit / Suite', v: inspection.unitSuite },
+          { l: 'Owner / Manager', v: inspection.ownerManager },
+          { l: 'Plan Tier', v: inspection.planTier },
+          { l: 'Inspection Date', v: inspection.date }
+        ].map((f, i) => (
+          <div key={i} style={f.span ? { gridColumn: 'span 2' } : {}}>
+            <div style={{ fontSize: 8, fontWeight: 700, color: TEAL, textTransform: 'uppercase', letterSpacing: 0.6 }}>{f.l}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: NAVY, marginTop: 2 }}>{f.v || '\u2014'}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* STATUS LEGEND BAR */}
+      <div style={{ display: 'flex', gap: 14, padding: '12px 28px', borderBottom: `1px solid ${BORDER_GRAY}`, alignItems: 'center', flexWrap: 'wrap', background: '#fff' }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color: NAVY, letterSpacing: 0.5 }}>STATUS:</span>
+        {STATUS_OPTIONS.map(o => (
+          <div key={o.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5 }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: o.color, boxShadow: `0 0 0 2px ${o.color}22` }} />
+            <span style={{ color: DARK_GRAY }}>{o.label}:</span>
+            <strong style={{ color: NAVY }}>{counts[o.key]}</strong>
+          </div>
+        ))}
+        <div style={{ marginLeft: 'auto', fontSize: 11.5, fontWeight: 700, color: TEAL, background: TEAL_LIGHT, padding: '4px 12px', borderRadius: 12 }}>
+          <strong>{done}/{total}</strong> checked
+        </div>
+      </div>
+
+      {/* SECTIONS */}
+      {SECTIONS.map(sec => {
+        const sCount = sectionCount(sec);
+        const isComplete = sCount.completed === sCount.total;
+        return (
+          <div key={sec.title} className="no-break">
+            <div style={{ background: `linear-gradient(90deg,${NAVY} 0%,${NAVY}ee 100%)`, color: '#fff', padding: '9px 28px', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.8, borderLeft: `5px solid ${TEAL}`, marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>{sec.icon} {sec.title.toUpperCase()}</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: isComplete ? '#86EFAC' : TEAL_MED, background: 'rgba(255,255,255,0.08)', padding: '2px 10px', borderRadius: 10, letterSpacing: 0.5 }}>
+                {sCount.completed}/{sCount.total} {isComplete ? '\u2713' : ''}
+              </span>
+            </div>
+            {sec.items.map((item, idx) => {
+              const s = inspection.statuses[item];
+              const sc = sC(s);
+              const sl = sL(s);
+              const hasP = (inspection.photos?.[item] || []).length > 0;
+              const note = inspection.itemNotes?.[item] || '';
+              const rowBg = idx % 2 === 0 ? '#fff' : '#FAFBFC';
+              return (
+                <div key={item}>
+                  <div className="pdf-row" style={{ background: rowBg, borderBottom: `1px solid ${BORDER_GRAY}33` }}>
+                    <span className="pdf-row-name">{item}</span>
+                    <span className="pdf-row-leader" />
+                    {hasP && <span className="pdf-row-cam">{'\u{1F4F7}'}</span>}
+                    <div style={{
+                      fontWeight: 700,
+                      fontSize: 10,
+                      padding: '3px 12px',
+                      borderRadius: 11,
+                      background: s ? sc + '15' : '#F3F4F6',
+                      color: s ? sc : MED_GRAY,
+                      border: `1.5px solid ${s ? sc + '66' : BORDER_GRAY}`,
+                      minWidth: 78,
+                      textAlign: 'center',
+                      flexShrink: 0,
+                      letterSpacing: 0.3,
+                      textTransform: 'uppercase'
+                    }}>{sl}</div>
+                  </div>
+                  {note && <div className="pdf-row-note">Note: {note}</div>}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+
+      {/* NOTES */}
+      {inspection.notes && (
+        <div className="no-break" style={{ padding: '16px 28px', borderTop: `2px solid ${BORDER_GRAY}`, marginTop: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: TEAL, textTransform: 'uppercase', marginBottom: 6, letterSpacing: 0.8 }}>Notes & Observations</div>
+          <div style={{ fontSize: 12, lineHeight: 1.65, whiteSpace: 'pre-wrap', color: DARK_GRAY }}>{inspection.notes}</div>
+        </div>
+      )}
+
+      {/* OVERALL RATING */}
+      {inspection.overallRating && (
+        <div className="no-break" style={{ background: TEAL_LIGHT, border: `2px solid ${TEAL}55`, borderRadius: 8, margin: '12px 28px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: NAVY, letterSpacing: 0.6 }}>OVERALL PROPERTY RATING:</span>
+          <span style={{ fontSize: 16, fontWeight: 800, color: TEAL, letterSpacing: 0.3 }}>{inspection.overallRating}</span>
+        </div>
+      )}
+
+      {/* ATTENTION ITEMS */}
+      {att.length > 0 && (
+        <div className="no-break" style={{ margin: '12px 28px', padding: '14px 18px', background: '#FEF2F2', border: '2px solid #FECACA', borderRadius: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#DC2626', marginBottom: 8, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}>{'\u26A0'} ITEMS REQUIRING ATTENTION</div>
+          {att.map((a, i) => (
+            <div key={i} style={{ fontSize: 11, color: '#991B1B', padding: '4px 0', borderBottom: i < att.length - 1 ? '1px solid #FECACA' : 'none', lineHeight: 1.5 }}>
+              <strong>{a.section}:</strong> {a.item}{a.note ? ` \u2014 ${a.note}` : ''}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* SIGNATURES */}
+      <div className="no-break" style={{ display: 'flex', gap: 28, padding: '32px 28px 16px' }}>
+        <div style={{ flex: 1, borderTop: `1.5px solid ${NAVY}`, paddingTop: 6, fontSize: 9, color: MED_GRAY, fontWeight: 600, letterSpacing: 0.5 }}>INSPECTOR SIGNATURE</div>
+        <div style={{ flex: 1, borderTop: `1.5px solid ${NAVY}`, paddingTop: 6, fontSize: 9, color: MED_GRAY, fontWeight: 600, letterSpacing: 0.5 }}>DATE</div>
+      </div>
+
+      {/* PHOTO DOCUMENTATION (page 2+) */}
+      {photoEntries.length > 0 && (
+        <>
+          <div className="page-break" />
+          <div style={{ background: NAVY, color: '#fff', padding: '12px 28px', fontSize: 14, fontWeight: 700, borderLeft: `5px solid ${TEAL}`, marginTop: 8, letterSpacing: 0.5 }}>
+            {'\u{1F4F7}'} Photo Documentation
+          </div>
+          <div style={{ padding: '10px 28px 6px', fontSize: 10, color: MED_GRAY, fontStyle: 'italic', borderBottom: `1px solid ${BORDER_GRAY}` }}>
+            Each photo is timestamped at the moment of capture for verification.
+          </div>
+          {photoEntries.map((pe, idx) => (
+            <div key={idx} className="no-break" style={{ padding: '14px 28px', borderBottom: `1px solid ${BORDER_GRAY}33` }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 2 }}>{pe.item}</div>
+              <div style={{ fontSize: 10, color: TEAL, marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{pe.section}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {pe.pics.map((src, j) => (
+                  <img key={j} src={src} alt="" style={{ width: 220, height: 165, objectFit: 'cover', borderRadius: 6, border: `1.5px solid ${BORDER_GRAY}`, boxShadow: '0 2px 6px rgba(0,0,0,0.08)' }} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* FOOTER */}
+      <div style={{ background: NAVY, padding: '14px 28px', textAlign: 'center', marginTop: 12, borderTop: `4px solid ${TEAL}` }}>
+        <div style={{ fontSize: 11, color: '#fff', fontWeight: 700, marginBottom: 2 }}>First Coast Property Care LLC</div>
+        <div style={{ fontSize: 9, color: TEAL_MED, letterSpacing: 0.5 }}>Jacksonville & St. Augustine, FL {'\u2022'} (904) 754-3614 {'\u2022'} firstcoastpropertycare@gmail.com</div>
+        <div style={{ fontSize: 9, color: TEAL_MED, fontStyle: 'italic', marginTop: 4 }}>"We Handle the Small Things Before They Become Big Problems."</div>
+      </div>
     </div></div>);
 }
 
@@ -458,7 +627,7 @@ export default function App() {
                   {ip.length > 0 && <span style={{ fontSize: 10, color: TEAL, fontWeight: 600, ...F }}>{'\u{1F4F7}'} {ip.length}</span>}</div>
                 <StatusPill status={st} onSelect={v => upd(c => ({ statuses: { ...c.statuses, [item]: v } }))} />
                 {showNote && <ItemNote value={noteVal} onChange={v => upd(c => ({ itemNotes: { ...c.itemNotes, [item]: v } }))} />}
-                <PhotoRow photos={ip} onAdd={d => upd(c => ({ photos: { ...c.photos, [item]: [...(c.photos?.[item] || []), d] } }))} onRemove={i => upd(c => { const a = [...(c.photos?.[item] || [])]; a.splice(i, 1); return { photos: { ...c.photos, [item]: a } }; })} onTap={s => setLightbox(s)} /></div>); })}</div>}</div>); })}
+                <PhotoRow photos={ip} brandOpts={{ propertyAddress: cur.propertyAddress }} onAdd={d => upd(c => ({ photos: { ...c.photos, [item]: [...(c.photos?.[item] || []), d] } }))} onRemove={i => upd(c => { const a = [...(c.photos?.[item] || [])]; a.splice(i, 1); return { photos: { ...c.photos, [item]: a } }; })} onTap={s => setLightbox(s)} /></div>); })}</div>}</div>); })}
 
       <div style={S.infoCard}>
         <div style={{ fontSize: 11, fontWeight: 700, color: TEAL, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Notes & Observations</div>
@@ -491,4 +660,6 @@ const S = {
   empty: { textAlign: 'center', padding: '48px 20px', background: '#fff', borderRadius: 16, border: `1px dashed ${BORDER_GRAY}` },
   tag: { fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 10, ...F },
   delBtn: { position: 'absolute', bottom: 10, right: 14, background: 'transparent', border: 'none', color: '#EF4444', fontSize: 11, fontWeight: 600, cursor: 'pointer', ...F },
+};
+
 };
